@@ -307,6 +307,6 @@ astron/
 ---
 
 <p align="center">
-  <strong>© 2024 Antarik by JPN STUDIO. All rights reserved.</strong><br/>
+  <strong>© 2026 Antarik by JPN STUDIO. All rights reserved.</strong><br/>
   <a href="https://antarik.co">antarik.co</a>
 </p>
