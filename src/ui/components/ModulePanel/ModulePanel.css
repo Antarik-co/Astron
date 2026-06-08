@@ -1,0 +1,80 @@
+.astron-module-panel {
+  padding: 8px 12px;
+}
+
+.astron-module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.astron-module-header span {
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.astron-module-count {
+  color: #FF9A00 !important;
+}
+
+.astron-module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.astron-module-badge {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.astron-module-badge.disabled {
+  opacity: 0.35;
+}
+
+.astron-module-badge.enabled:hover {
+  border-color: #FF9A00;
+  background: #2A2A2A;
+}
+
+.astron-module-icon {
+  font-size: 16px;
+  min-height: 18px;
+}
+
+.astron-module-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: #CCCCCC;
+  letter-spacing: 0.3px;
+}
+
+.astron-module-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+.astron-module-dot.on {
+  background: #FF9A00;
+}
+
+.astron-module-dot.off {
+  background: #444;
+}

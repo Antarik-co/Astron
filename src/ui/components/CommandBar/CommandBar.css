@@ -1,0 +1,116 @@
+.astron-command-bar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 70px;
+}
+
+.astron-command-bar {
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 10px;
+  width: 560px;
+  max-width: 92vw;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+
+.astron-search-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  gap: 12px;
+}
+
+.astron-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #F0F0F0;
+  font-size: 15px;
+}
+
+.astron-search-icon {
+  color: #FF9A00;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.astron-kbd {
+  background: #333;
+  color: #999;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.astron-results-list {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.astron-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: #CCCCCC;
+  border-bottom: 1px solid #2A2A2A;
+}
+
+.astron-result-item:hover,
+.astron-result-item.selected {
+  background: #333;
+  color: #FFFFFF;
+}
+
+.astron-result-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.astron-result-label {
+  font-size: 13px;
+}
+
+.astron-result-meta {
+  font-size: 10px;
+  color: #666;
+}
+
+.astron-result-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.astron-badge-motion { background: #FF9A00; color: #000; }
+.astron-badge-timeline { background: #4A9EFF; color: #000; }
+.astron-badge-effects { background: #9B59B6; color: #fff; }
+.astron-badge-audio { background: #2ECC71; color: #000; }
+.astron-badge-color { background: #E74C3C; color: #fff; }
+.astron-badge-text { background: #F39C12; color: #000; }
+.astron-badge-export { background: #3498DB; color: #fff; }
+.astron-badge-organize { background: #7F8C8D; color: #fff; }
+.astron-badge-rig { background: #C0392B; color: #fff; }
+.astron-badge-3d { background: #1ABC9C; color: #000; }
+.astron-badge-automate { background: #8E44AD; color: #fff; }
+.astron-badge-ai_studio { background: #6C3483; color: #fff; }
+
+.astron-no-results {
+  padding: 20px 16px;
+  color: #666;
+  font-size: 13px;
+  text-align: center;
+}
