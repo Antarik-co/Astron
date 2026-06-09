@@ -74,6 +74,8 @@ export interface IndexEntry {
   module?: ModuleName;
   source: CommandSource;
   keywords: string[];
+  matchName?: string;
+  category?: string;
   /** Fuse.js relevance score — populated after search, absent in raw index */
   score?: number;
 }

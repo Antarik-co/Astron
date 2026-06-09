@@ -32,6 +32,14 @@ export const timelineCommands: AstronCommand[] = [
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectCrossing()
   },
   {
+    id: 'timeline:select:starting-after',
+    label: 'Select Starting After Cursor',
+    description: 'Select layers whose start time begins after the current playhead.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'starting', 'after', 'starttime', 'precomp', 'time-remap', 'cursor'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectStartingAfterCursor()
+  },
+  {
     id: 'timeline:select:adj',
     label: 'Select Adjustment Layers',
     description: 'Select adjustment layers in the active composition.',
@@ -134,6 +142,46 @@ export const timelineCommands: AstronCommand[] = [
     module: 'timeline' as ModuleName,
     keywords: ['snap', 'earliest', 'start', 'align'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('earliest-start')
+  },
+  {
+    id: 'timeline:snap:latest-start',
+    label: 'Snap Latest Start',
+    description: 'Snap the latest selected layer start to the playhead.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'latest', 'start', 'align', 'preserve', 'gap'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('latest-start')
+  },
+  {
+    id: 'timeline:snap:earliest-end',
+    label: 'Snap Earliest End',
+    description: 'Snap the earliest selected layer end to the playhead.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'earliest', 'end', 'align', 'preserve', 'gap'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('earliest-end')
+  },
+  {
+    id: 'timeline:snap:latest-end',
+    label: 'Snap Latest End',
+    description: 'Snap the latest selected layer end to the playhead.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'latest', 'end', 'align', 'preserve', 'gap'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('latest-end')
+  },
+  {
+    id: 'timeline:snap:closest:ripple',
+    label: 'Ripple Snap Closest Edge',
+    description: 'Snap the closest selected edge and ripple downstream layers by the same frame-accurate offset.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'ripple', 'closest', 'gap', 'preserve', 'downstream'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('closest', true, true)
+  },
+  {
+    id: 'timeline:snap:earliest-start:ripple',
+    label: 'Ripple Snap Earliest Start',
+    description: 'Snap the earliest selected start and ripple downstream layers while preserving gaps.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'ripple', 'earliest', 'start', 'gap', 'preserve'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('earliest-start', true, true)
   },
   {
     id: 'timeline:rename',

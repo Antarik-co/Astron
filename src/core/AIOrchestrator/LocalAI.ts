@@ -44,13 +44,23 @@ const PATTERNS: ReadonlyArray<{
 }> = [
   // Motion module
   {
-    pattern: /\b(ease|easing|overshoot|elastic|bounce)\b/i,
-    commandId: 'motion:ease',
+    pattern: /\b(overshoot|snappy|ease|easing)\b/i,
+    commandId: 'motion:ease:overshoot',
     confidence: 0.9,
   },
   {
+    pattern: /\b(elastic|spring)\b/i,
+    commandId: 'motion:ease:elastic',
+    confidence: 0.9,
+  },
+  {
+    pattern: /\b(bounce|bouncy|rubber)\b/i,
+    commandId: 'motion:ease:bounce',
+    confidence: 0.88,
+  },
+  {
     pattern: /\b(stagger|cascade|delay)\b/i,
-    commandId: 'motion:stagger',
+    commandId: 'motion:stagger:default',
     confidence: 0.85,
   },
 
@@ -64,7 +74,7 @@ const PATTERNS: ReadonlyArray<{
   // Export module
   {
     pattern: /\b(export|render|save|deliver)\b/i,
-    commandId: 'export:quick',
+    commandId: 'export:web',
     confidence: 0.7,
   },
 
@@ -77,15 +87,15 @@ const PATTERNS: ReadonlyArray<{
 
   // Timeline module — selection
   {
-    pattern: /\b(select|after|cursor|before)\b/i,
-    commandId: 'timeline:select',
+    pattern: /\b(select).*\b(after|cursor|playhead)\b|\b(after|cursor|playhead).*\b(select)\b/i,
+    commandId: 'timeline:select:after',
     confidence: 0.8,
   },
 
   // Timeline module — snap/align
   {
     pattern: /\b(snap|align|playhead)\b/i,
-    commandId: 'timeline:snap',
+    commandId: 'timeline:snap:closest',
     confidence: 0.85,
   },
 
@@ -99,15 +109,30 @@ const PATTERNS: ReadonlyArray<{
   // Effects module
   {
     pattern: /\b(glow|bloom|light)\b/i,
-    commandId: 'effects:glow',
+    commandId: 'effects:glow:medium',
     confidence: 0.75,
   },
 
   // Color module
   {
     pattern: /\b(color|grade|lut)\b/i,
-    commandId: 'color:grade',
+    commandId: 'color:grade:cinematic',
     confidence: 0.75,
+  },
+  {
+    pattern: /\b(camera|orbit|3d|dolly|ken burns)\b/i,
+    commandId: '3d:camera:orbit',
+    confidence: 0.78,
+  },
+  {
+    pattern: /\b(typewriter|text reveal|words?)\b/i,
+    commandId: 'text:animate:typewriter',
+    confidence: 0.78,
+  },
+  {
+    pattern: /\b(null|controller|control layer)\b/i,
+    commandId: 'automate:null',
+    confidence: 0.82,
   },
 ];
 

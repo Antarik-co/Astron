@@ -1,256 +1,162 @@
-/**
- * @file IndexBuilder.ts
- * @module core/CommandPalette
- * @task T007
- * @depends T003 (FuzzySearch), T004 (CommandRegistry), T006 (types/index)
- *
- * Builds and maintains the unified search index for the Astron command palette.
- * Aggregates all indexable sources — native AE effects, Astron module commands,
- * third-party plugin effects, and user scripts — into a single Fuse.js-backed
- * index that powers fuzzy search at <20ms response time.
- *
- * Index sources (per Section 5 of the Implementation Plan):
- *   1. Astron module commands  (/ease, /beats, /clean, etc.)
- *   2. Native AE effects       (300+ in full build; 50 seeded here)
- *   3. Third-party effects     (registered at runtime via addThirdPartyEffect)
- *   4. User scripts            (registered at runtime via addScript)
- *
- * Called once during CEP panel startup by the Core Engine bootstrap sequence.
- * After build(), search responses are always <20ms (index is pre-built, never rebuilt).
- */
+import { CommandSource, IndexEntry, ModuleName } from '../../types/index'
+import { callExtendScript } from '../../bridge/CSInterface/index'
+import { commandRegistry } from './CommandRegistry'
+import { fuzzySearch } from './FuzzySearch'
 
-import { IndexEntry, ModuleName, CommandSource } from '../../types/index';
-import { fuzzySearch } from './FuzzySearch';
-import { commandRegistry } from './CommandRegistry';
+interface InstalledEffect {
+  displayName: string
+  matchName: string
+  category?: string
+}
 
-// ---------------------------------------------------------------------------
-// IndexBuilder
-// ---------------------------------------------------------------------------
+const FALLBACK_EFFECTS: InstalledEffect[] = [
+  { displayName: 'Gaussian Blur', matchName: 'ADBE Gaussian Blur 2', category: 'Blur & Sharpen' },
+  { displayName: 'Fast Box Blur', matchName: 'ADBE Box Blur2', category: 'Blur & Sharpen' },
+  { displayName: 'Camera Lens Blur', matchName: 'ADBE Camera Lens Blur', category: 'Blur & Sharpen' },
+  { displayName: 'Directional Blur', matchName: 'ADBE Motion Blur', category: 'Blur & Sharpen' },
+  { displayName: 'Radial Blur', matchName: 'ADBE Radial Blur', category: 'Blur & Sharpen' },
+  { displayName: 'Sharpen', matchName: 'ADBE Sharpen', category: 'Blur & Sharpen' },
+  { displayName: 'Unsharp Mask', matchName: 'ADBE Unsharp Mask2', category: 'Blur & Sharpen' },
+  { displayName: 'Glow', matchName: 'ADBE Glo2', category: 'Stylize' },
+  { displayName: 'Fill', matchName: 'ADBE Fill', category: 'Generate' },
+  { displayName: 'Stroke', matchName: 'ADBE Stroke', category: 'Generate' },
+  { displayName: 'Gradient Ramp', matchName: 'ADBE Ramp', category: 'Generate' },
+  { displayName: 'Fractal Noise', matchName: 'ADBE Fractal Noise', category: 'Noise & Grain' },
+  { displayName: 'Turbulent Noise', matchName: 'ADBE Turbulent Noise', category: 'Noise & Grain' },
+  { displayName: 'Lens Flare', matchName: 'ADBE Lens Flare', category: 'Generate' },
+  { displayName: 'Grid', matchName: 'ADBE Grid', category: 'Generate' },
+  { displayName: 'Vegas', matchName: 'ADBE Vegas', category: 'Generate' },
+  { displayName: 'Levels', matchName: 'ADBE Levels2', category: 'Color Correction' },
+  { displayName: 'Curves', matchName: 'ADBE CurvesCustom', category: 'Color Correction' },
+  { displayName: 'Hue/Saturation', matchName: 'ADBE HUE SATURATION', category: 'Color Correction' },
+  { displayName: 'Brightness & Contrast', matchName: 'ADBE Brightness & Contrast 2', category: 'Color Correction' },
+  { displayName: 'Exposure', matchName: 'ADBE Exposure2', category: 'Color Correction' },
+  { displayName: 'Lumetri Color', matchName: 'ADBE Lumetri', category: 'Color Correction' },
+  { displayName: 'Tint', matchName: 'ADBE Tint', category: 'Color Correction' },
+  { displayName: 'Tritone', matchName: 'ADBE Tritone', category: 'Color Correction' },
+  { displayName: 'Photo Filter', matchName: 'ADBE Photo Filter', category: 'Color Correction' },
+  { displayName: 'Color Balance', matchName: 'ADBE Color Balance 2', category: 'Color Correction' },
+  { displayName: 'Drop Shadow', matchName: 'ADBE Drop Shadow', category: 'Perspective' },
+  { displayName: 'Radial Shadow', matchName: 'ADBE Radial Shadow', category: 'Perspective' },
+  { displayName: 'Bevel Alpha', matchName: 'ADBE Bevel Alpha', category: 'Perspective' },
+  { displayName: 'Corner Pin', matchName: 'ADBE Corner Pin', category: 'Distort' },
+  { displayName: 'Bezier Warp', matchName: 'ADBE BEZMESH', category: 'Distort' },
+  { displayName: 'Mesh Warp', matchName: 'ADBE MESH WARP', category: 'Distort' },
+  { displayName: 'Liquify', matchName: 'ADBE Liquify', category: 'Distort' },
+  { displayName: 'Wave Warp', matchName: 'ADBE Wave Warp', category: 'Distort' },
+  { displayName: 'Ripple', matchName: 'ADBE Ripple', category: 'Distort' },
+  { displayName: 'Turbulent Displace', matchName: 'ADBE Turbulent Displace', category: 'Distort' },
+  { displayName: 'Transform', matchName: 'ADBE Geometry2', category: 'Distort' },
+  { displayName: 'Warp Stabilizer', matchName: 'ADBE Warp Stabilizer', category: 'Distort' },
+  { displayName: 'Echo', matchName: 'ADBE Echo', category: 'Time' },
+  { displayName: 'Posterize Time', matchName: 'ADBE Posterize Time', category: 'Time' },
+  { displayName: 'Time Displacement', matchName: 'ADBE Time Displacement', category: 'Time' },
+  { displayName: 'CC Particle World', matchName: 'CC Particle World', category: 'Simulation' },
+  { displayName: 'CC Particle Systems II', matchName: 'CC Particle Systems II', category: 'Simulation' },
+  { displayName: 'Particle Playground', matchName: 'ADBE Particle Playground', category: 'Simulation' },
+  { displayName: 'Shatter', matchName: 'ADBE Shatter', category: 'Simulation' },
+  { displayName: 'Card Dance', matchName: 'ADBE Card Dance', category: 'Simulation' },
+  { displayName: 'Foam', matchName: 'ADBE Foam', category: 'Simulation' },
+  { displayName: 'Simple Choker', matchName: 'ADBE Simple Choker', category: 'Matte' },
+  { displayName: 'Set Matte', matchName: 'ADBE Set Matte3', category: 'Channel' },
+  { displayName: 'Minimax', matchName: 'ADBE Minimax', category: 'Channel' },
+  { displayName: 'Shift Channels', matchName: 'ADBE Shift Channels', category: 'Channel' },
+  { displayName: 'Linear Wipe', matchName: 'ADBE Linear Wipe', category: 'Transition' },
+  { displayName: 'Venetian Blinds', matchName: 'ADBE Venetian Blinds', category: 'Transition' },
+  { displayName: 'CC Light Sweep', matchName: 'CC Light Sweep', category: 'CC Bundle' },
+  { displayName: 'CC Radial Fast Blur', matchName: 'CC Radial Fast Blur', category: 'CC Bundle' },
+  { displayName: 'CC Force Motion Blur', matchName: 'CC Force Motion Blur', category: 'CC Bundle' },
+  { displayName: 'CC Glass', matchName: 'CC Glass', category: 'CC Bundle' },
+  { displayName: 'CC Kaleida', matchName: 'CC Kaleida', category: 'CC Bundle' },
+  { displayName: 'CC Bend It', matchName: 'CC Bend It', category: 'CC Bundle' },
+  { displayName: 'CC RepeTile', matchName: 'CC RepeTile', category: 'CC Bundle' },
+  { displayName: 'CC Toner', matchName: 'CC Toner', category: 'CC Bundle' },
+]
+
+function effectToEntry(effect: InstalledEffect): IndexEntry {
+  const id = `effect:${effect.matchName || effect.displayName}`.replace(/\s+/g, '-').toLowerCase()
+  return {
+    id,
+    label: effect.displayName,
+    type: 'effect',
+    source: effect.matchName.startsWith('ADBE') || effect.matchName.startsWith('CC ') ? 'native_effect' : 'third_party',
+    matchName: effect.matchName,
+    category: effect.category,
+    keywords: [
+      effect.displayName.toLowerCase(),
+      effect.matchName.toLowerCase(),
+      effect.category?.toLowerCase() ?? '',
+      'effect',
+      'plugin',
+      'native',
+      'ae',
+    ].filter(Boolean),
+  }
+}
 
 export class IndexBuilder {
-  // -------------------------------------------------------------------------
-  // Private state
-  // -------------------------------------------------------------------------
+  private isBuilt = false
 
-  private isBuilt: boolean = false;
-
-  /**
-   * Seed list of 50 common native After Effects effects.
-   * Extended at runtime by the Effects module's AE DOM scanner (Module 03),
-   * which enumerates every installed effect via ExtendScript.
-   *
-   * Grouped by category for readability — order does not affect search priority.
-   */
-  private readonly nativeEffectNames: string[] = [
-    // Blur & Sharpen
-    'Gaussian Blur',
-    'Motion Blur',
-    'Fast Box Blur',
-    'CC Radial Fast Blur',
-    'Unsharp Mask',
-    'Fast Blur',
-
-    // Stylize / Generate
-    'Glow',
-    'Lens Flare',
-    'Stroke',
-    'Fill',
-    'Gradient Ramp',
-    'Fractal Noise',
-    'Strobe Light',
-
-    // Color Correction
-    'Levels',
-    'Curves',
-    'Hue/Saturation',
-    'Color Balance',
-    'Exposure',
-    'Brightness & Contrast',
-    'Colorama',
-    'Tritone',
-    'Tint',
-    'Photo Filter',
-
-    // Perspective / Layer Styles
-    'Drop Shadow',
-    'Bevel and Emboss',
-    'Radial Shadow',
-    'Inner Shadow',
-
-    // Distort
-    'Mesh Warp',
-    'Bezier Warp',
-    'Ripple',
-    'Wave Warp',
-    'Liquify',
-    'Corner Pin',
-
-    // Motion / Stabilization
-    'Warp Stabilizer',
-    'Puppet',
-    'Reshape',
-
-    // Time
-    'Echo',
-    'Posterize Time',
-    'Time Warp',
-
-    // Simulation / Particles
-    'Particle Playground',
-    'CC Particle Systems II',
-    'CC Particle World',
-    'Shatter',
-
-    // Text / Obsolete (still heavily used)
-    'Text',
-    'Numbers',
-    'Timecode',
-    'Path Text',
-
-    // Matte / Channel
-    'Simple Choker',
-    'Minimax',
-    'Channel Combiner',
-    'Set Matte',
-    'Linear Wipe',
-  ];
-
-  // -------------------------------------------------------------------------
-  // Public methods
-  // -------------------------------------------------------------------------
-
-  /**
-   * Builds the full unified search index.
-   *
-   * Collects all Astron commands from CommandRegistry and all seeded native
-   * effects, merges them into a single IndexEntry array, and hands it off to
-   * FuzzySearch to construct the Fuse.js index.
-   *
-   * Must be called once during CEP panel startup (Core Engine bootstrap).
-   * Subsequent calls are idempotent: `isBuilt` is set to `true` on first
-   * completion, and callers can check `isReady()` before invoking `build()`.
-   *
-   * @returns {Promise<void>} Resolves once the index has been constructed.
-   */
   public async build(): Promise<void> {
-    const nativeEffects: IndexEntry[] = this.buildNativeEffects();
-    const astronCommands: IndexEntry[] = this.buildAstronCommands();
-
-    this.isBuilt = true;
-
-    fuzzySearch.buildIndex([...astronCommands, ...nativeEffects]);
-
-    console.log(
-      `Astron Index: ${fuzzySearch.getItemCount()} entries indexed.`,
-    );
+    const astronCommands = this.buildAstronCommands()
+    const effects = await this.buildEffects()
+    this.isBuilt = true
+    fuzzySearch.buildIndex([...astronCommands, ...effects])
   }
 
-  /**
-   * Registers a third-party plugin effect into the live index.
-   *
-   * Called by the Effects module (T003) after it scans the AE plugin directory
-   * via ExtendScript at startup. Each discovered effect is passed in individually.
-   *
-   * The entry is added directly to the FuzzySearch instance so it is immediately
-   * searchable without a full index rebuild.
-   *
-   * @param name       - Display name of the effect (e.g. "Deep Glow")
-   * @param pluginName - Name of the parent plugin (e.g. "Rowbyte")
-   */
   public addThirdPartyEffect(name: string, pluginName: string): void {
-    const entry: IndexEntry = {
+    fuzzySearch.addEntry({
       id: `third-party:${pluginName}:${name}`.replace(/\s+/g, '-').toLowerCase(),
       label: name,
       type: 'effect',
       source: 'third_party' as CommandSource,
-      keywords: [
-        name.toLowerCase(),
-        pluginName.toLowerCase(),
-        'plugin',
-        'effect',
-      ],
-    };
-
-    fuzzySearch.addEntry(entry);
+      category: pluginName,
+      keywords: [name.toLowerCase(), pluginName.toLowerCase(), 'plugin', 'effect'],
+    })
   }
 
-  /**
-   * Registers a user-installed script into the live index.
-   *
-   * Called by the Automate module (Module 11) Script Indexer after it scans
-   * the AE Scripts folder and ScriptUI Panels directory via ExtendScript.
-   *
-   * @param scriptName - Display name of the script (e.g. "Duik Bassel 2")
-   */
   public addScript(scriptName: string): void {
-    const entry: IndexEntry = {
+    fuzzySearch.addEntry({
       id: `script:${scriptName.replace(/\s+/g, '-').toLowerCase()}`,
       label: scriptName,
       type: 'script',
       source: 'script' as CommandSource,
-      keywords: [
-        scriptName.toLowerCase(),
-        'script',
-        'run',
-        'execute',
-      ],
-    };
-
-    fuzzySearch.addEntry(entry);
+      keywords: [scriptName.toLowerCase(), 'script', 'run', 'execute'],
+    })
   }
 
-  /**
-   * Returns whether the index has been successfully built.
-   *
-   * The Core Engine and CommandPalette UI gate search interactions on this flag —
-   * the palette shows a "Building index…" spinner until `isReady()` returns true.
-   *
-   * @returns {boolean} `true` once `build()` has completed at least once.
-   */
   public isReady(): boolean {
-    return this.isBuilt;
+    return this.isBuilt
   }
 
-  // -------------------------------------------------------------------------
-  // Private helpers
-  // -------------------------------------------------------------------------
+  private async buildEffects(): Promise<IndexEntry[]> {
+    const scanned = await this.scanInstalledEffects()
+    const byMatchName = new Map<string, InstalledEffect>()
 
-  /**
-   * Maps the seeded `nativeEffectNames` list into typed `IndexEntry` objects.
-   *
-   * Each native effect receives:
-   *   - A deterministic, URL-safe id prefixed with `native:`
-   *   - type: 'effect' and source: 'native_effect' for search-result priority scoring
-   *   - A minimal keyword set: the lowercased name, plus 'effect' and 'native'
-   *     as generic fallback terms
-   *
-   * @returns {IndexEntry[]} Array of IndexEntry objects for all native effects.
-   */
-  private buildNativeEffects(): IndexEntry[] {
-    return this.nativeEffectNames.map((name): IndexEntry => ({
-      id: `native:${name.replace(/\s+/g, '-').toLowerCase()}`,
-      label: name,
-      type: 'effect',
-      source: 'native_effect' as CommandSource,
-      keywords: [
-        name.toLowerCase(),
-        'effect',
-        'native',
-      ],
-    }));
+    FALLBACK_EFFECTS.forEach((effect) => byMatchName.set(effect.matchName, effect))
+    scanned.forEach((effect) => byMatchName.set(effect.matchName || effect.displayName, effect))
+
+    return Array.from(byMatchName.values()).map(effectToEntry)
   }
 
-  /**
-   * Retrieves all registered Astron module commands from CommandRegistry
-   * and maps them into typed `IndexEntry` objects.
-   *
-   * Commands carry their `module` field so the palette UI can render the
-   * module badge (e.g. "MOTION", "TIMELINE") alongside each result.
-   * They also carry their full `keywords` array — authored per-command in
-   * CommandRegistry — which improves fuzzy match recall over label-only search.
-   *
-   * @returns {IndexEntry[]} Array of IndexEntry objects for all registered commands.
-   */
+  private async scanInstalledEffects(): Promise<InstalledEffect[]> {
+    try {
+      const result = await callExtendScript({
+        module: 'effects',
+        action: 'scanInstalledEffects',
+        params: {},
+      })
+      if (!result.success || !Array.isArray(result.data)) {
+        return []
+      }
+      return result.data.filter((item): item is InstalledEffect => {
+        return typeof item?.displayName === 'string' && typeof item?.matchName === 'string'
+      })
+    } catch {
+      return []
+    }
+  }
+
   private buildAstronCommands(): IndexEntry[] {
     return commandRegistry.getAll().map((command): IndexEntry => ({
       id: command.id,
@@ -259,21 +165,8 @@ export class IndexBuilder {
       source: 'astron' as CommandSource,
       module: command.module as ModuleName,
       keywords: command.keywords,
-    }));
+    }))
   }
 }
 
-// ---------------------------------------------------------------------------
-// Singleton export
-// ---------------------------------------------------------------------------
-
-/**
- * Singleton instance of IndexBuilder.
- *
- * Consumed by:
- *   - Core Engine bootstrap  → calls `indexBuilder.build()` on panel open
- *   - Effects module (T003)  → calls `indexBuilder.addThirdPartyEffect()`
- *   - Automate module        → calls `indexBuilder.addScript()`
- *   - CommandPalette UI      → polls `indexBuilder.isReady()` before first search
- */
-export const indexBuilder = new IndexBuilder();
+export const indexBuilder = new IndexBuilder()

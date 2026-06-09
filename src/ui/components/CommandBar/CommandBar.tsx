@@ -44,6 +44,11 @@ export default function CommandBar({ isOpen, onClose, onCommandExecute }: Comman
     }
     const parsed = commandParser.parse(query)
     const params = commandParser.extractParams(parsed.params) as Record<string, string>
+    if (selected.entry.matchName) {
+      params.matchName = selected.entry.matchName
+    }
+    params.effectName = selected.entry.label
+    params.source = selected.entry.source
     onCommandExecute(selected.entry.id, params)
     onClose()
   }, [results, selectedIndex, query, onCommandExecute, onClose])
@@ -90,7 +95,14 @@ export default function CommandBar({ isOpen, onClose, onCommandExecute }: Comman
               key={result.entry.id}
               className={`astron-result-item ${i === selectedIndex ? 'selected' : ''}`}
               onClick={() => {
-                onCommandExecute(result.entry.id)
+                const params: Record<string, string> = {
+                  effectName: result.entry.label,
+                  source: result.entry.source,
+                }
+                if (result.entry.matchName) {
+                  params.matchName = result.entry.matchName
+                }
+                onCommandExecute(result.entry.id, params)
                 onClose()
               }}
             >

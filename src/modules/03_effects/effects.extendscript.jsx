@@ -398,6 +398,45 @@
         return result;
     }
 
+    /**
+     * scanInstalledEffects(params)
+     *
+     * Reads AE's installed effect registry when the host exposes app.effects.
+     * This covers native effects, bundled CC effects, and third-party plugins.
+     * Falls back to Astron.utils.effects.getMatchNames() when unavailable.
+     */
+    function scanInstalledEffects(params) {
+        var effects = [];
+        var i, fx, matchNames, name;
+
+        try {
+            if (app.effects && app.effects.length) {
+                for (i = 0; i < app.effects.length; i++) {
+                    fx = app.effects[i];
+                    effects.push({
+                        displayName: fx.displayName || fx.name || fx.matchName,
+                        matchName: fx.matchName || fx.displayName || fx.name,
+                        category: fx.category || ""
+                    });
+                }
+                return effects;
+            }
+        } catch (e) {
+        }
+
+        matchNames = Astron.utils.effects.getMatchNames();
+        for (name in matchNames) {
+            if (matchNames.hasOwnProperty(name)) {
+                effects.push({
+                    displayName: name,
+                    matchName: matchNames[name],
+                    category: "Built-in"
+                });
+            }
+        }
+        return effects;
+    }
+
     // -------------------------------------------------------------------------
     // Register handler namespace
     // -------------------------------------------------------------------------
@@ -406,7 +445,8 @@
         applyStack:    applyStack,
         saveStack:     saveStack,
         clearEffects:  clearEffects,
-        applyGlow:     applyGlow
+        applyGlow:     applyGlow,
+        scanInstalledEffects: scanInstalledEffects
     };
 
 }());

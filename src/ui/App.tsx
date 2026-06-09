@@ -7,6 +7,8 @@ import { moduleToggle } from '../core/ModuleManager/ModuleToggle'
 import { indexBuilder } from '../core/CommandPalette/IndexBuilder'
 import { commandRegistry } from '../core/CommandPalette/CommandRegistry'
 import { csBridge } from '../bridge/CSInterface/index'
+import { effectsModule } from '../modules/03_effects/Effects.module'
+import { aiStudioModule } from '../modules/12_ai_studio/AIStudio.module'
 import '../ui/themes/variables.css'
 
 import { motionCommands } from '../modules/01_motion/motion.commands'
@@ -44,6 +46,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [recentCommandIds, setRecentCommandIds] = useState<string[]>([])
   const [aiInput, setAiInput] = useState('')
+  const [aiResponse, setAiResponse] = useState('')
 
   useEffect(() => {
     let mounted = true
@@ -96,10 +99,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const handleCommandExecute = useCallback((commandId: string) => {
+  const handleCommandExecute = useCallback((commandId: string, params?: Record<string, string>) => {
     const cmd = commandRegistry.get(commandId)
     if (cmd) {
-      cmd.execute().catch(console.error)
+      cmd.execute(params).catch(console.error)
+    } else if (commandId.startsWith('effect:') || commandId.startsWith('third-party:')) {
+      const effectName = params?.matchName || params?.effectName || commandId.replace(/^effect:/, '').replace(/^third-party:/, '').replace(/-/g, ' ')
+      effectsModule.addEffect(effectName).catch(console.error)
     }
     setRecentCommandIds((prev) => [commandId, ...prev.filter((id) => id !== commandId)].slice(0, 5))
     setIsCommandBarOpen(false)
@@ -118,6 +124,33 @@ export default function App() {
       cmd.execute().catch(console.error)
     }
   }, [])
+
+  const handleAiSubmit = useCallback(() => {
+    const prompt = aiInput.trim()
+    if (!prompt) {
+      return
+    }
+    setAiResponse('Thinking...')
+    aiStudioModule.query(prompt)
+      .then((result) => {
+        if (!result.success) {
+          setAiResponse(result.message || 'AI request failed')
+          return
+        }
+        const payload = result.data as any
+        const routed = payload?.result
+        if (Array.isArray(routed)) {
+          setAiResponse(routed.join(', '))
+        } else if (typeof routed === 'string') {
+          setAiResponse(routed)
+        } else {
+          setAiResponse(JSON.stringify(routed || payload))
+        }
+      })
+      .catch((error) => {
+        setAiResponse(error instanceof Error ? error.message : 'AI request failed')
+      })
+  }, [aiInput])
 
   const enabledModules = config.modules
     ? Object.entries(config.modules).filter(([, v]) => v).map(([k]) => k as ModuleName)
@@ -194,6 +227,11 @@ export default function App() {
             <input
               value={aiInput}
               onChange={(event) => setAiInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  handleAiSubmit()
+                }
+              }}
               placeholder='AI: "Ask me anything..."'
               style={{
                 width: '100%',
@@ -207,6 +245,40 @@ export default function App() {
                 outline: 'none',
               }}
             />
+            <button
+              onClick={handleAiSubmit}
+              style={{
+                marginTop: 6,
+                width: '100%',
+                background: 'var(--astron-accent)',
+                border: 'none',
+                borderRadius: 'var(--astron-radius-md)',
+                color: '#000',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '6px 8px',
+              }}
+            >
+              Ask AI
+            </button>
+            {aiResponse && (
+              <div
+                style={{
+                  marginTop: 6,
+                  background: 'var(--astron-bg-secondary)',
+                  border: '1px solid var(--astron-border)',
+                  borderRadius: 'var(--astron-radius-md)',
+                  color: 'var(--astron-text-secondary)',
+                  fontSize: 11,
+                  lineHeight: 1.4,
+                  padding: '7px 9px',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {aiResponse}
+              </div>
+            )}
           </div>
 
           {recentCommandIds.length > 0 && (

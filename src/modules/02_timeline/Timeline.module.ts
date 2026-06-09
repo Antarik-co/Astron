@@ -14,6 +14,10 @@ export class TimelineModule {
     return callExtendScript({ action: 'selectCrossing', module: 'timeline', params: {} })
   }
 
+  selectStartingAfterCursor(): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'selectStartingAfterCursor', module: 'timeline', params: {} })
+  }
+
   selectByType(layerType: string): Promise<AstronCommandResult> {
     return callExtendScript({ action: 'selectByType', module: 'timeline', params: { layerType } })
   }

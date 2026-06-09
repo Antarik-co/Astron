@@ -82,7 +82,24 @@ export class CSInterfaceBridge {
    */
   callExtendScript(message: ExtendScriptMessage): Promise<ExtendScriptResult> {
     const scriptCall = `Astron.handle(${JSON.stringify(message)})`;
-    return this.evalScript(scriptCall);
+    return this.evalScript(scriptCall).then((result) => {
+      if (!result.success) {
+        return result;
+      }
+
+      const payload = result.data as any;
+      if (payload && typeof payload === 'object' && typeof payload.success === 'boolean') {
+        if (payload.success) {
+          return { success: true, data: payload.data };
+        }
+        return {
+          success: false,
+          error: payload.error || payload.message || 'ExtendScript command failed',
+        };
+      }
+
+      return result;
+    });
   }
 
   // -------------------------------------------------------------------------

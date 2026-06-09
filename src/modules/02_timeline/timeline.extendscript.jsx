@@ -109,6 +109,28 @@
             return { selected: count };
         },
 
+        selectStartingAfterCursor: function (params) {
+            Astron.utils.beginUndo("Astron: Select Starting After Cursor");
+
+            var comp        = Astron.utils.getActiveComp();
+            var currentTime = comp.time;
+            var count       = 0;
+            var i, layer;
+
+            deselectAll(comp);
+
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.locked && layer.startTime >= currentTime) {
+                    layer.selected = true;
+                    count++;
+                }
+            }
+
+            Astron.utils.endUndo();
+            return { selected: count, cursor: currentTime };
+        },
+
         // ─────────────────────────────────────────────────────────────────
         // selectByType(params)
         // params.layerType: 'adj'|'null'|'audio'|'shape'|'shy'|'guide'|'precomp'
