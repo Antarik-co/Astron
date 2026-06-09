@@ -411,13 +411,15 @@
 
         try {
             if (app.effects && app.effects.length) {
-                for (i = 0; i < app.effects.length; i++) {
-                    fx = app.effects[i];
-                    effects.push({
-                        displayName: fx.displayName || fx.name || fx.matchName,
-                        matchName: fx.matchName || fx.displayName || fx.name,
-                        category: fx.category || ""
-                    });
+                for (i = 0; i <= app.effects.length; i++) {
+                    fx = app.effects[i] || app.effects[i + 1];
+                    if (fx) {
+                        effects.push({
+                            displayName: fx.displayName || fx.name || fx.matchName,
+                            matchName: fx.matchName || fx.displayName || fx.name,
+                            category: fx.category || ""
+                        });
+                    }
                 }
                 return effects;
             }
@@ -437,6 +439,100 @@
         return effects;
     }
 
+    function _scanPresetFolder(folder, presets, seen, rootPath) {
+        var files, i, item, path, rel, category;
+        if (!folder || !folder.exists) { return; }
+
+        files = folder.getFiles();
+        for (i = 0; i < files.length; i++) {
+            item = files[i];
+            if (item instanceof Folder) {
+                _scanPresetFolder(item, presets, seen, rootPath);
+            } else if (item instanceof File && /\.ffx$/i.test(item.name)) {
+                path = item.fsName;
+                if (!seen[path]) {
+                    rel = path.indexOf(rootPath) === 0 ? path.substring(rootPath.length) : item.name;
+                    rel = rel.replace(/^[\\\/]+/, "");
+                    category = rel.indexOf("\\") >= 0 ? rel.split("\\")[0] : "";
+                    if (category === "" && rel.indexOf("/") >= 0) {
+                        category = rel.split("/")[0];
+                    }
+                    presets.push({
+                        displayName: item.name.replace(/\.ffx$/i, ""),
+                        path: path,
+                        category: category
+                    });
+                    seen[path] = true;
+                }
+            }
+        }
+    }
+
+    function scanAnimationPresets(params) {
+        var presets = [];
+        var seen = {};
+        var roots = [];
+        var i, folder;
+
+        try { roots.push(new Folder(app.path + "/Presets")); } catch (e) {}
+        try { roots.push(new Folder(Folder.appPackage.fsName + "/Presets")); } catch (e2) {}
+        try { roots.push(new Folder(Folder.userData.fsName + "/Adobe/After Effects/User Presets")); } catch (e3) {}
+
+        for (i = 0; i < roots.length; i++) {
+            folder = roots[i];
+            if (folder && folder.exists) {
+                _scanPresetFolder(folder, presets, seen, folder.fsName);
+            }
+        }
+
+        return presets;
+    }
+
+    function applyAnimationPreset(params) {
+        Astron.utils.beginUndo("Astron: Apply Animation Preset");
+
+        var result = { applied: 0, presetPath: "" };
+
+        try {
+            var presetPath = params && (params.presetPath || params.path || params.effectName || params.matchName);
+            var file, layers, i, layer;
+
+            if (!presetPath) {
+                Astron.utils.endUndo();
+                return { applied: 0, presetPath: "", error: "presetPath param required" };
+            }
+
+            file = new File(presetPath);
+            if (!file.exists) {
+                Astron.utils.endUndo();
+                return { applied: 0, presetPath: presetPath, error: "Animation preset not found" };
+            }
+
+            layers = _getSelectedLayers();
+            if (layers.length === 0) {
+                Astron.utils.endUndo();
+                return { applied: 0, presetPath: file.fsName, error: "No layers selected" };
+            }
+
+            for (i = 0; i < layers.length; i++) {
+                layer = layers[i];
+                try {
+                    layer.applyPreset(file);
+                    result.applied++;
+                } catch (layerErr) {
+                }
+            }
+
+            result.presetPath = file.fsName;
+
+        } catch (e4) {
+            result.error = e4.message || String(e4);
+        }
+
+        Astron.utils.endUndo();
+        return result;
+    }
+
     // -------------------------------------------------------------------------
     // Register handler namespace
     // -------------------------------------------------------------------------
@@ -446,7 +542,9 @@
         saveStack:     saveStack,
         clearEffects:  clearEffects,
         applyGlow:     applyGlow,
-        scanInstalledEffects: scanInstalledEffects
+        scanInstalledEffects: scanInstalledEffects,
+        scanAnimationPresets: scanAnimationPresets,
+        applyAnimationPreset: applyAnimationPreset
     };
 
 }());

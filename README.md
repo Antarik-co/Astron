@@ -6,7 +6,7 @@
 <h3 align="center">After Effects Power Extension</h3>
 
 <p align="center">
-  <strong>85 commands • 12 modules • AI-powered • One keyboard shortcut</strong>
+  <strong>100+ commands • 12 modules • AI-powered • One keyboard shortcut</strong>
 </p>
 
 <p align="center">
@@ -36,9 +36,9 @@
 "make this text bounce"  → AI understands and executes
 ```
 
-> **One panel. 85 commands. Zero menu diving.**
+> **One panel. 100+ commands. Zero menu diving.**
 
-Astron indexes every native AE effect, every installed third-party plugin, every script, and all 85 built-in commands under a single fuzzy search bar. If you can describe it, Astron can find it and run it.
+Astron indexes every native AE effect, every installed third-party plugin, AE animation presets, local user presets, and all 100+ built-in commands under a single fuzzy search bar. If you can describe it, Astron can find it and run it.
 
 ---
 
@@ -284,7 +284,7 @@ User Input
 
 ### Install via ZXP Installer (Recommended)
 1. Download [ZXP Installer](https://aescripts.com/learn/zxp-installer/) or [Anastasiy's Extension Manager](https://install.anastasiy.com/)
-2. Drag `Astron-v1.0.0.zxp` onto the installer window
+2. Drag `Astron-v1.0.1.zxp` onto the installer window
 3. Restart After Effects
 4. Open **Window → Extensions → Astron** ✨
 
@@ -327,6 +327,22 @@ That's it. Astron executes the command on your selected layers.
 5. Ctrl+Space → type "export social" → Enter  ← added to render queue
 ```
 What used to take 15 minutes: **45 seconds.**
+
+---
+
+## Release Notes
+
+### Astron v1.0.1
+- Completed the LayerStickPro gap-analysis fixes for timeline selection, snapping, status, and gap cleanup.
+- Added start-time based layer selection for precomps and time-remapped layers.
+- Added full LSP smart-filter coverage for adjustment, null, video footage, audio, shy, guide, PSD, AI, shape, and precomp layers.
+- Added Snap To Previous Layer and Fill Timeline Gaps commands.
+- Exposed all snap edge modes plus ripple and no-preserve-gap snap commands with frame-accurate behavior.
+- Improved command palette search across Astron commands, native AE effects, bundled CC effects, installed third-party effects, and AE `.ffx` animation presets.
+- Wired search results for AE effects to apply exact match names to selected layers.
+- Wired search results for animation presets to apply the preset file to selected layers.
+- Activated the AI panel flow and fixed LocalAI suggestions to return executable Astron command IDs.
+- Removed hardcoded cloud AI keys from source; configure keys via localStorage or environment-backed config.
 
 ---
 

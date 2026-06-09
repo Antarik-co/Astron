@@ -26,6 +26,43 @@
         return n < 10 ? "0" + n : "" + n;
     }
 
+    function hasFileExtension(layer, pattern) {
+        var src, mainSource, fileName;
+        if (!(layer instanceof AVLayer)) { return false; }
+        src = layer.source;
+        if (!src) { return false; }
+        mainSource = src.mainSource;
+        if (!(mainSource instanceof FileSource)) { return false; }
+        if (!mainSource.file) { return false; }
+        fileName = mainSource.file.fsName || mainSource.file.name || "";
+        return pattern.test(fileName);
+    }
+
+    function isVideoFootage(layer) {
+        var src;
+        if (!(layer instanceof AVLayer)) { return false; }
+        if (layer.adjustmentLayer || layer.nullLayer) { return false; }
+        if (!layer.hasVideo) { return false; }
+        if (!layer.source) { return false; }
+        src = layer.source;
+        if (!(src instanceof FootageItem)) { return false; }
+        if (src.mainSource instanceof SolidSource) { return false; }
+        return true;
+    }
+
+    function getLayerSnapPoint(snapshot, mode, cursorTime) {
+        var distIn, distOut;
+        if (mode === "earliest-end" || mode === "latest-end") {
+            return snapshot.op;
+        }
+        if (mode === "closest" || mode === "closest-edge") {
+            distIn = Math.abs(snapshot.ip - cursorTime);
+            distOut = Math.abs(snapshot.op - cursorTime);
+            return distIn <= distOut ? snapshot.ip : snapshot.op;
+        }
+        return snapshot.ip;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Register module handlers
     // ─────────────────────────────────────────────────────────────────────────
@@ -47,7 +84,7 @@
 
             for (i = 1; i <= comp.numLayers; i++) {
                 layer = comp.layer(i);
-                if (layer.inPoint >= currentTime) {
+                if (!layer.locked && layer.inPoint >= currentTime) {
                     layer.selected = true;
                     count++;
                 }
@@ -73,7 +110,7 @@
 
             for (i = 1; i <= comp.numLayers; i++) {
                 layer = comp.layer(i);
-                if (layer.outPoint <= currentTime) {
+                if (!layer.locked && layer.outPoint <= currentTime) {
                     layer.selected = true;
                     count++;
                 }
@@ -99,7 +136,7 @@
 
             for (i = 1; i <= comp.numLayers; i++) {
                 layer = comp.layer(i);
-                if (layer.inPoint <= currentTime && layer.outPoint >= currentTime) {
+                if (!layer.locked && layer.inPoint <= currentTime && layer.outPoint >= currentTime) {
                     layer.selected = true;
                     count++;
                 }
@@ -133,7 +170,7 @@
 
         // ─────────────────────────────────────────────────────────────────
         // selectByType(params)
-        // params.layerType: 'adj'|'null'|'audio'|'shape'|'shy'|'guide'|'precomp'
+        // params.layerType: 'adj'|'null'|'video'|'audio'|'shape'|'shy'|'guide'|'psd'|'ai'|'precomp'|'comp'
         // ─────────────────────────────────────────────────────────────────
         selectByType: function (params) {
             Astron.utils.beginUndo("Astron: Select By Type");
@@ -168,6 +205,9 @@
                             (layer.hasVideo === false) &&
                             (layer.hasAudio === true);
 
+                } else if (layerType === "video") {
+                    match = isVideoFootage(layer);
+
                 } else if (layerType === "shape") {
                     match = (layer instanceof ShapeLayer);
 
@@ -180,6 +220,16 @@
                 } else if (layerType === "precomp") {
                     match = (layer instanceof AVLayer) &&
                             (layer.source instanceof CompItem);
+
+                } else if (layerType === "comp") {
+                    match = (layer instanceof AVLayer) &&
+                            (layer.source instanceof CompItem);
+
+                } else if (layerType === "psd") {
+                    match = hasFileExtension(layer, /\.psd$/i);
+
+                } else if (layerType === "ai") {
+                    match = hasFileExtension(layer, /\.ai$/i);
                 }
 
                 if (match) {
@@ -250,55 +300,98 @@
             Astron.utils.beginUndo("Astron: Snap To Current Time");
 
             var comp        = Astron.utils.getActiveComp();
-            var layers      = Astron.utils.requireSelectedLayers();
-            var currentTime = comp.time;
+            var rawLayers   = Astron.utils.requireSelectedLayers();
+            var currentTime = snapToFrame(comp.time, comp.frameDuration);
             var mode        = params.mode    || "closest";
             var ripple      = params.ripple  || false;
-            var i, layer, offset;
+            var preserveGaps = (typeof params.preserveGaps === "boolean") ? params.preserveGaps : true;
+            var layers      = [];
+            var i, layer, offset, anchor, point, snapshot;
+
+            if (mode === "start_earliest") { mode = "earliest-start"; }
+            if (mode === "start_latest") { mode = "latest-start"; }
+            if (mode === "end_earliest") { mode = "earliest-end"; }
+            if (mode === "end_latest") { mode = "latest-end"; }
+            if (mode === "closest_edge") { mode = "closest"; }
+
+            for (i = 0; i < rawLayers.length; i++) {
+                layer = rawLayers[i];
+                if (!layer.locked) {
+                    layers.push({
+                        ref: layer,
+                        st: layer.startTime,
+                        ip: layer.inPoint,
+                        op: layer.outPoint
+                    });
+                }
+            }
+
+            if (layers.length === 0) {
+                Astron.utils.endUndo();
+                return { snapped: 0, mode: mode, error: "All selected layers are locked" };
+            }
+
+            if (!preserveGaps) {
+                for (i = 0; i < layers.length; i++) {
+                    snapshot = layers[i];
+                    point = getLayerSnapPoint(snapshot, mode, currentTime);
+                    offset = snapToFrame(currentTime - point, comp.frameDuration);
+                    snapshot.ref.startTime = snapToFrame(snapshot.st + offset, comp.frameDuration);
+                }
+
+                Astron.utils.endUndo();
+                return { snapped: layers.length, mode: mode, preserveGaps: false };
+            }
 
             // ── Determine reference time from selected layers based on mode ──
             if (mode === "earliest-start") {
-                var minIn = layers[0].inPoint;
+                var minIn = layers[0].ip;
                 for (i = 1; i < layers.length; i++) {
-                    if (layers[i].inPoint < minIn) { minIn = layers[i].inPoint; }
+                    if (layers[i].ip < minIn) { minIn = layers[i].ip; }
                 }
-                offset = currentTime - minIn;
+                anchor = minIn;
+                offset = currentTime - anchor;
 
             } else if (mode === "latest-start") {
-                var maxIn = layers[0].inPoint;
+                var maxIn = layers[0].ip;
                 for (i = 1; i < layers.length; i++) {
-                    if (layers[i].inPoint > maxIn) { maxIn = layers[i].inPoint; }
+                    if (layers[i].ip > maxIn) { maxIn = layers[i].ip; }
                 }
-                offset = currentTime - maxIn;
+                anchor = maxIn;
+                offset = currentTime - anchor;
 
             } else if (mode === "earliest-end") {
-                var minOut = layers[0].outPoint;
+                var minOut = layers[0].op;
                 for (i = 1; i < layers.length; i++) {
-                    if (layers[i].outPoint < minOut) { minOut = layers[i].outPoint; }
+                    if (layers[i].op < minOut) { minOut = layers[i].op; }
                 }
-                offset = currentTime - minOut;
+                anchor = minOut;
+                offset = currentTime - anchor;
 
             } else if (mode === "latest-end") {
-                var maxOut = layers[0].outPoint;
+                var maxOut = layers[0].op;
                 for (i = 1; i < layers.length; i++) {
-                    if (layers[i].outPoint > maxOut) { maxOut = layers[i].outPoint; }
+                    if (layers[i].op > maxOut) { maxOut = layers[i].op; }
                 }
-                offset = currentTime - maxOut;
+                anchor = maxOut;
+                offset = currentTime - anchor;
 
             } else {
                 // 'closest' — compare earliest inPoint distance vs latest outPoint distance
-                var closestIn  = layers[0].inPoint;
-                var closestOut = layers[0].outPoint;
+                var closestIn  = layers[0].ip;
+                var closestOut = layers[0].op;
                 for (i = 1; i < layers.length; i++) {
-                    if (layers[i].inPoint  < closestIn)  { closestIn  = layers[i].inPoint;  }
-                    if (layers[i].outPoint > closestOut) { closestOut = layers[i].outPoint; }
+                    if (layers[i].ip < closestIn) { closestIn = layers[i].ip; }
+                    if (layers[i].op > closestOut) { closestOut = layers[i].op; }
                 }
                 var distIn  = Math.abs(currentTime - closestIn);
                 var distOut = Math.abs(currentTime - closestOut);
                 if (distIn <= distOut) {
-                    offset = currentTime - closestIn;
+                    anchor = closestIn;
+                    offset = currentTime - anchor;
                 } else {
-                    offset = currentTime - closestOut;
+                    anchor = closestOut;
+                    offset = currentTime - anchor;
                 }
             }
 
@@ -307,20 +400,15 @@
 
             // ── Move all selected layers by offset ──
             for (i = 0; i < layers.length; i++) {
-                if (!layers[i].locked) {
-                    layers[i].startTime = snapToFrame(layers[i].startTime + offset, comp.frameDuration);
-                }
+                layers[i].ref.startTime = snapToFrame(layers[i].st + offset, comp.frameDuration);
             }
 
             // ── Ripple: move all downstream unselected layers by the same offset ──
             if (ripple) {
-                // Reference point is the original cursor position minus offset
-                // i.e. we ripple layers that start at or after the pre-snap cursor
-                var rippleThreshold = currentTime - offset;
                 for (i = 1; i <= comp.numLayers; i++) {
                     layer = comp.layer(i);
                     if (!layer.selected && !layer.locked) {
-                        if (layer.inPoint >= rippleThreshold) {
+                        if (layer.inPoint >= anchor) {
                             layer.startTime = snapToFrame(layer.startTime + offset, comp.frameDuration);
                         }
                     }
@@ -328,10 +416,138 @@
             }
 
             Astron.utils.endUndo();
-            return { snapped: layers.length, mode: mode, offset: offset };
+            return { snapped: layers.length, mode: mode, offset: offset, preserveGaps: true, ripple: ripple };
         },
 
         // ─────────────────────────────────────────────────────────────────
+        snapToPrevLayer: function (params) {
+            Astron.utils.beginUndo("Astron: Snap To Previous Layer");
+
+            var comp = Astron.utils.getActiveComp();
+            var rawLayers = Astron.utils.requireSelectedLayers();
+            var layers = [];
+            var minIn, prevEnd, snapTo, offset;
+            var i, layer;
+
+            for (i = 0; i < rawLayers.length; i++) {
+                layer = rawLayers[i];
+                if (!layer.locked) {
+                    layers.push({
+                        ref: layer,
+                        st: layer.startTime,
+                        ip: layer.inPoint
+                    });
+                }
+            }
+
+            if (layers.length === 0) {
+                Astron.utils.endUndo();
+                return { snapped: 0, error: "All selected layers are locked" };
+            }
+
+            minIn = layers[0].ip;
+            for (i = 1; i < layers.length; i++) {
+                if (layers[i].ip < minIn) { minIn = layers[i].ip; }
+            }
+
+            prevEnd = -1;
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.selected && !layer.locked && layer.outPoint <= minIn + comp.frameDuration * 0.5) {
+                    if (layer.outPoint > prevEnd) {
+                        prevEnd = layer.outPoint;
+                    }
+                }
+            }
+
+            if (prevEnd < 0) {
+                Astron.utils.endUndo();
+                return { snapped: 0, error: "No previous layer found before the selection." };
+            }
+
+            snapTo = snapToFrame(prevEnd, comp.frameDuration);
+            offset = snapToFrame(snapTo - minIn, comp.frameDuration);
+            for (i = 0; i < layers.length; i++) {
+                layers[i].ref.startTime = snapToFrame(layers[i].st + offset, comp.frameDuration);
+            }
+
+            Astron.utils.endUndo();
+            return { snapped: layers.length, offset: offset };
+        },
+
+        fillGaps: function (params) {
+            Astron.utils.beginUndo("Astron: Fill Gaps");
+
+            var comp = Astron.utils.getActiveComp();
+            var selected = Astron.utils.getSelectedLayers();
+            var layers = [];
+            var moved = 0;
+            var i, layer, prev, curr, gap, offset;
+
+            if (selected && selected.length > 1) {
+                for (i = 0; i < selected.length; i++) {
+                    if (!selected[i].locked) {
+                        layers.push(selected[i]);
+                    }
+                }
+            } else {
+                for (i = 1; i <= comp.numLayers; i++) {
+                    layer = comp.layer(i);
+                    if (!layer.locked) {
+                        layers.push(layer);
+                    }
+                }
+            }
+
+            if (layers.length < 2) {
+                Astron.utils.endUndo();
+                return { filled: 0, error: "Need at least two unlocked layers to fill gaps." };
+            }
+
+            layers.sort(function (a, b) {
+                return a.inPoint - b.inPoint;
+            });
+
+            for (i = 1; i < layers.length; i++) {
+                prev = layers[i - 1];
+                curr = layers[i];
+                gap = curr.inPoint - prev.outPoint;
+                if (gap > comp.frameDuration * 0.5) {
+                    offset = snapToFrame(prev.outPoint - curr.inPoint, comp.frameDuration);
+                    curr.startTime = snapToFrame(curr.startTime + offset, comp.frameDuration);
+                    moved++;
+                }
+            }
+
+            Astron.utils.endUndo();
+            return { filled: moved, processed: layers.length };
+        },
+
+        getStatus: function (params) {
+            var comp = Astron.utils.getActiveComp();
+            var fd = comp.frameDuration;
+            var fps = 1 / fd;
+            var t = comp.time;
+            var hh = Math.floor(t / 3600);
+            var mm = Math.floor((t % 3600) / 60);
+            var ss = Math.floor(t % 60);
+            var ff = Math.round((t - Math.floor(t)) * fps);
+
+            if (ff >= Math.round(fps)) {
+                ff = 0;
+                ss++;
+            }
+
+            return {
+                compName: comp.name,
+                time: padTwo(hh) + ":" + padTwo(mm) + ":" + padTwo(ss) + ":" + padTwo(ff),
+                frame: Math.floor(t / fd),
+                layers: comp.numLayers,
+                selected: comp.selectedLayers.length,
+                fps: Math.round(fps * 100) / 100
+            };
+        },
+
         // bulkRename(params)
         // params.pattern: string — supports '##' (counter) and '*' (original name)
         // ─────────────────────────────────────────────────────────────────

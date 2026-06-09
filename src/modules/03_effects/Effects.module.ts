@@ -21,6 +21,14 @@ export class EffectsModule {
   applyGlow(quality: 'soft' | 'medium' | 'hard' = 'medium'): Promise<AstronCommandResult> {
     return callExtendScript({ action: 'applyGlow', module: 'effects', params: { quality } })
   }
+
+  scanAnimationPresets(): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'scanAnimationPresets', module: 'effects', params: {} })
+  }
+
+  applyAnimationPreset(presetPath: string): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'applyAnimationPreset', module: 'effects', params: { presetPath } })
+  }
 }
 
 export const effectsModule = new EffectsModule()

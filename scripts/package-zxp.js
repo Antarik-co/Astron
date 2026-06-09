@@ -14,7 +14,7 @@
  *
  * Usage: npm run package
  *
- * Output: release/Astron-v1.0.0.zxp
+ * Output: release/Astron-v1.0.1.zxp
  */
 
 const { execSync } = require('child_process');
@@ -24,7 +24,7 @@ const fs = require('fs');
 // ── Configuration ──────────────────────────────────────────────
 const EXTENSION_ID = 'co.antarik.astron';
 const VERSION = require('../package.json').version;
-const CERT_PASSWORD = 'AstronAntarik2024';
+const CERT_PASSWORD = process.env.ASTRON_CERT_PASSWORD || '';
 const CERT_COUNTRY = 'IN';
 const CERT_STATE = 'India';
 const CERT_ORG = 'Antarik by JPN STUDIO';
@@ -103,6 +103,13 @@ if (!zxpSignCmd) {
 }
 
 console.log(`✅ ZXPSignCmd found: ${zxpSignCmd}`);
+
+if (!CERT_PASSWORD) {
+  console.error('');
+  console.error('❌ ASTRON_CERT_PASSWORD is not set.');
+  console.error('   Set it in your environment before running npm run package.');
+  process.exit(1);
+}
 
 // ── Create directories ─────────────────────────────────────────
 fs.mkdirSync(releaseDir, { recursive: true });

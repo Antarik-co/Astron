@@ -34,6 +34,18 @@ export class TimelineModule {
     return callExtendScript({ action: 'snapToCurrentTime', module: 'timeline', params: { mode, ripple, preserveGaps } })
   }
 
+  snapToPrevLayer(): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'snapToPrevLayer', module: 'timeline', params: {} })
+  }
+
+  fillGaps(): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'fillGaps', module: 'timeline', params: {} })
+  }
+
+  getStatus(): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'getStatus', module: 'timeline', params: {} })
+  }
+
   bulkRename(pattern: string): Promise<AstronCommandResult> {
     return callExtendScript({ action: 'bulkRename', module: 'timeline', params: { pattern } })
   }

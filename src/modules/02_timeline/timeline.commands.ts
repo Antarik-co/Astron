@@ -72,6 +72,54 @@ export const timelineCommands: AstronCommand[] = [
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('precomp')
   },
   {
+    id: 'timeline:select:video',
+    label: 'Select Video Footage',
+    description: 'Select video footage layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'video', 'footage', 'layer', 'type', 'filter'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('video')
+  },
+  {
+    id: 'timeline:select:audio',
+    label: 'Select Audio Layers',
+    description: 'Select audio-only layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'audio', 'sound', 'music', 'layer', 'type'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('audio')
+  },
+  {
+    id: 'timeline:select:shy',
+    label: 'Select Shy Layers',
+    description: 'Select shy layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'shy', 'hidden', 'layer', 'type'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('shy')
+  },
+  {
+    id: 'timeline:select:guide',
+    label: 'Select Guide Layers',
+    description: 'Select guide layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'guide', 'reference', 'layer', 'type'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('guide')
+  },
+  {
+    id: 'timeline:select:psd',
+    label: 'Select PSD Layers',
+    description: 'Select Photoshop footage layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'psd', 'photoshop', 'footage', 'layer'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('psd')
+  },
+  {
+    id: 'timeline:select:ai',
+    label: 'Select Illustrator Layers',
+    description: 'Select Illustrator footage layers in the active composition.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'ai', 'illustrator', 'vector', 'footage', 'layer'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('ai')
+  },
+  {
     id: 'timeline:invert',
     label: 'Invert Selection',
     description: 'Invert selected and unselected timeline layers.',
@@ -182,6 +230,38 @@ export const timelineCommands: AstronCommand[] = [
     module: 'timeline' as ModuleName,
     keywords: ['snap', 'ripple', 'earliest', 'start', 'gap', 'preserve'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('earliest-start', true, true)
+  },
+  {
+    id: 'timeline:snap:closest:no-gaps',
+    label: 'Snap Closest Without Preserving Gaps',
+    description: 'Snap each selected layer independently by its closest edge.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'closest', 'no', 'gaps', 'independent', 'per-layer'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToCurrentTime('closest', false, false)
+  },
+  {
+    id: 'timeline:snap:prev-layer',
+    label: 'Snap To Previous Layer',
+    description: 'Move selected layers so the earliest selected in-point touches the previous layer end.',
+    module: 'timeline' as ModuleName,
+    keywords: ['snap', 'previous', 'prev', 'layer', 'gap', 'align'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.snapToPrevLayer()
+  },
+  {
+    id: 'timeline:fill-gaps',
+    label: 'Fill Timeline Gaps',
+    description: 'Close gaps between selected layers or all unlocked layers.',
+    module: 'timeline' as ModuleName,
+    keywords: ['fill', 'gaps', 'timeline', 'layers', 'close', 'ripple'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.fillGaps()
+  },
+  {
+    id: 'timeline:status',
+    label: 'Timeline Status',
+    description: 'Read active composition time, frame, layer count, selection count, and frame rate.',
+    module: 'timeline' as ModuleName,
+    keywords: ['status', 'timeline', 'comp', 'time', 'frame', 'fps', 'layers', 'selection'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.getStatus()
   },
   {
     id: 'timeline:rename',

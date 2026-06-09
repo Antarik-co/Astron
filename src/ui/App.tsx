@@ -106,6 +106,9 @@ export default function App() {
     } else if (commandId.startsWith('effect:') || commandId.startsWith('third-party:')) {
       const effectName = params?.matchName || params?.effectName || commandId.replace(/^effect:/, '').replace(/^third-party:/, '').replace(/-/g, ' ')
       effectsModule.addEffect(effectName).catch(console.error)
+    } else if (commandId.startsWith('preset:')) {
+      const presetPath = params?.matchName || params?.presetPath || params?.path || ''
+      effectsModule.applyAnimationPreset(presetPath).catch(console.error)
     }
     setRecentCommandIds((prev) => [commandId, ...prev.filter((id) => id !== commandId)].slice(0, 5))
     setIsCommandBarOpen(false)
@@ -180,7 +183,7 @@ export default function App() {
         }}
       >
         <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--astron-accent)', letterSpacing: 1 }}>ASTRON</span>
-        <span style={{ fontSize: 10, color: 'var(--astron-text-muted)' }}>{csBridge.isConnected() ? 'CEP' : 'v1.0.0'}</span>
+        <span style={{ fontSize: 10, color: 'var(--astron-text-muted)' }}>{csBridge.isConnected() ? 'CEP v1.0.1' : 'v1.0.1'}</span>
       </div>
 
       {isLoading ? (

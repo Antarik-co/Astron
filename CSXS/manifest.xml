@@ -2,11 +2,11 @@
 <ExtensionManifest
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   ExtensionBundleId="co.antarik.astron"
-  ExtensionBundleVersion="1.0.0"
+  ExtensionBundleVersion="1.0.1"
   Version="11.0">
 
   <ExtensionList>
-    <Extension Id="co.antarik.astron.panel" Version="1.0.0"/>
+    <Extension Id="co.antarik.astron.panel" Version="1.0.1"/>
   </ExtensionList>
 
   <ExecutionEnvironment>

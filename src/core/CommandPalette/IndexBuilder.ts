@@ -9,6 +9,12 @@ interface InstalledEffect {
   category?: string
 }
 
+interface AnimationPreset {
+  displayName: string
+  path: string
+  category?: string
+}
+
 const FALLBACK_EFFECTS: InstalledEffect[] = [
   { displayName: 'Gaussian Blur', matchName: 'ADBE Gaussian Blur 2', category: 'Blur & Sharpen' },
   { displayName: 'Fast Box Blur', matchName: 'ADBE Box Blur2', category: 'Blur & Sharpen' },
@@ -94,14 +100,37 @@ function effectToEntry(effect: InstalledEffect): IndexEntry {
   }
 }
 
+function presetToEntry(preset: AnimationPreset): IndexEntry {
+  const id = `preset:${preset.path || preset.displayName}`.replace(/\s+/g, '-').toLowerCase()
+  return {
+    id,
+    label: preset.displayName,
+    type: 'preset',
+    source: 'preset' as CommandSource,
+    matchName: preset.path,
+    category: preset.category,
+    keywords: [
+      preset.displayName.toLowerCase(),
+      preset.path.toLowerCase(),
+      preset.category?.toLowerCase() ?? '',
+      'preset',
+      'animation',
+      'animate',
+      'ffx',
+      'ae',
+    ].filter(Boolean),
+  }
+}
+
 export class IndexBuilder {
   private isBuilt = false
 
   public async build(): Promise<void> {
     const astronCommands = this.buildAstronCommands()
     const effects = await this.buildEffects()
+    const presets = await this.buildAnimationPresets()
     this.isBuilt = true
-    fuzzySearch.buildIndex([...astronCommands, ...effects])
+    fuzzySearch.buildIndex([...astronCommands, ...effects, ...presets])
   }
 
   public addThirdPartyEffect(name: string, pluginName: string): void {
@@ -139,6 +168,15 @@ export class IndexBuilder {
     return Array.from(byMatchName.values()).map(effectToEntry)
   }
 
+  private async buildAnimationPresets(): Promise<IndexEntry[]> {
+    const presets = await this.scanAnimationPresets()
+    const byPath = new Map<string, AnimationPreset>()
+
+    presets.forEach((preset) => byPath.set(preset.path || preset.displayName, preset))
+
+    return Array.from(byPath.values()).map(presetToEntry)
+  }
+
   private async scanInstalledEffects(): Promise<InstalledEffect[]> {
     try {
       const result = await callExtendScript({
@@ -151,6 +189,24 @@ export class IndexBuilder {
       }
       return result.data.filter((item): item is InstalledEffect => {
         return typeof item?.displayName === 'string' && typeof item?.matchName === 'string'
+      })
+    } catch {
+      return []
+    }
+  }
+
+  private async scanAnimationPresets(): Promise<AnimationPreset[]> {
+    try {
+      const result = await callExtendScript({
+        module: 'effects',
+        action: 'scanAnimationPresets',
+        params: {},
+      })
+      if (!result.success || !Array.isArray(result.data)) {
+        return []
+      }
+      return result.data.filter((item): item is AnimationPreset => {
+        return typeof item?.displayName === 'string' && typeof item?.path === 'string'
       })
     } catch {
       return []

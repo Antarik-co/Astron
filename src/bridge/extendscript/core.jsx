@@ -298,7 +298,7 @@
     //
     //    Usage from CEP side:
     //      callExtendScript({ module: 'core', action: 'ping', params: {} })
-    //      → { success: true, data: { status: 'ok', version: '1.0.0', ... } }
+    //      → { success: true, data: { status: 'ok', version: '1.0.1', ... } }
     // =========================================================================
 
     Astron.handlers.core = {
@@ -319,7 +319,7 @@
 
             return {
                 status:    "ok",
-                version:   "1.0.0",
+                version:   "1.0.1",
                 plugin:    "Astron",
                 activeComp: activeCompName
             };
