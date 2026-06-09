@@ -145,6 +145,31 @@ User Input
 - Node.js **18+**
 - npm
 
+### Build from Source
+```bash
+git clone https://github.com/your-org/astron.git
+cd astron
+npm install
+npm run build:prod
+```
+
+### Install for Development
+```bash
+npm run install:dev
+```
+This does everything automatically:
+1. ✅ Enables CEP debug mode (Windows registry)
+2. ✅ Creates a junction to AE's extensions folder
+3. ✅ Open AE → **Window → Extensions → Astron**
+
+### Create ZXP Package (for Distribution)
+```bash
+npm run package
+```
+→ Output: `release/Astron-v1.0.0.zxp`
+
+---
+
 ## 📦 Installation (End Users)
 
 ### Option 1: ZXP Installer (Recommended)
