@@ -26,8 +26,8 @@
       <DispatchInfo>
 
         <Resources>
-          <MainPath>./dist/index.html</MainPath>
-          <ScriptPath>./dist/extendscript/core.jsx</ScriptPath>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./extendscript/core.jsx</ScriptPath>
           <CEFCommandLine>
             <Parameter>--allow-file-access-from-files</Parameter>
             <Parameter>--allow-file-access</Parameter>

@@ -242,6 +242,70 @@
             return { selected: count, type: layerType };
         },
 
+        selectByLabelColor: function (params) {
+            Astron.utils.beginUndo("Astron: Select By Label Color");
+
+            var comp = Astron.utils.getActiveComp();
+            var labelIndices = params.labelIndices || [];
+            var count = 0;
+            var lookup = {};
+            var i, layer;
+
+            if (!(labelIndices instanceof Array) || labelIndices.length === 0) {
+                Astron.utils.endUndo();
+                return { selected: 0, error: "labelIndices array required" };
+            }
+
+            for (i = 0; i < labelIndices.length; i++) {
+                lookup[Number(labelIndices[i])] = true;
+            }
+
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.locked) {
+                    layer.selected = false;
+                }
+            }
+
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.locked && lookup[layer.label]) {
+                    layer.selected = true;
+                    count++;
+                }
+            }
+
+            Astron.utils.endUndo();
+            return { selected: count, labels: labelIndices };
+        },
+
+        selectLayerByName: function (params) {
+            Astron.utils.beginUndo("Astron: Select Layer By Name");
+
+            var comp = Astron.utils.getActiveComp();
+            var name = params.name || "";
+            var count = 0;
+            var i, layer;
+
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.locked) {
+                    layer.selected = false;
+                }
+            }
+
+            for (i = 1; i <= comp.numLayers; i++) {
+                layer = comp.layer(i);
+                if (!layer.locked && layer.name === name) {
+                    layer.selected = true;
+                    count++;
+                }
+            }
+
+            Astron.utils.endUndo();
+            return { selected: count, name: name };
+        },
+
         // ─────────────────────────────────────────────────────────────────
         // invertSelection(params)
         // Flips selected state of every unlocked layer

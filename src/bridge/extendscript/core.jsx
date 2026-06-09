@@ -323,6 +323,172 @@
                 plugin:    "Astron",
                 activeComp: activeCompName
             };
+        },
+
+        buildFullIndex: function (params) {
+            var entries = [];
+            var i, j, item, comp, layer, fx, root, files, file, path, displayName, font;
+            var seen = {};
+
+            function add(entry) {
+                if (!entry || !entry.id || seen[entry.id]) { return; }
+                seen[entry.id] = true;
+                entries.push(entry);
+            }
+
+            function scanPresetFolder(folder) {
+                var list, k, child;
+                if (!folder || !folder.exists) { return; }
+                list = folder.getFiles();
+                for (k = 0; k < list.length; k++) {
+                    child = list[k];
+                    if (child instanceof Folder) {
+                        scanPresetFolder(child);
+                    } else if (child instanceof File && /\.ffx$/i.test(child.name)) {
+                        add({
+                            id: "preset:" + child.fsName,
+                            label: child.name.replace(/\.ffx$/i, ""),
+                            type: "preset",
+                            source: "preset",
+                            matchName: child.fsName,
+                            category: "Animation Preset",
+                            keywords: ["preset", "animation", "ffx", child.name]
+                        });
+                    }
+                }
+            }
+
+            try {
+                if (app.effects && app.effects.length) {
+                    for (i = 0; i <= app.effects.length; i++) {
+                        fx = app.effects[i] || app.effects[i + 1];
+                        if (fx) {
+                            add({
+                                id: "effect:" + (fx.matchName || fx.displayName || fx.name),
+                                label: fx.displayName || fx.name || fx.matchName,
+                                type: "effect",
+                                source: ((fx.matchName || "").indexOf("ADBE") === 0 || (fx.matchName || "").indexOf("CC ") === 0) ? "native_effect" : "third_party",
+                                matchName: fx.matchName || fx.displayName || fx.name,
+                                category: fx.category || "Installed Effect",
+                                keywords: ["effect", "plugin", fx.displayName || "", fx.matchName || "", fx.category || ""]
+                            });
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            try { scanPresetFolder(new Folder(app.path + "/Presets")); } catch (e2) {}
+            try { scanPresetFolder(new Folder(Folder.appPackage.fsName + "/Presets")); } catch (e3) {}
+            try { scanPresetFolder(new Folder(Folder.userData.fsName + "/Adobe/After Effects/User Presets")); } catch (e4) {}
+
+            try {
+                if (app.project) {
+                    for (i = 1; i <= app.project.numItems; i++) {
+                        item = app.project.item(i);
+                        if (item instanceof CompItem) {
+                            add({
+                                id: "comp:" + item.name,
+                                label: item.name,
+                                type: "comp",
+                                source: "project",
+                                matchName: item.name,
+                                category: "Composition",
+                                keywords: ["comp", "composition", item.name]
+                            });
+                        }
+                    }
+                }
+            } catch (e5) {}
+
+            try {
+                comp = app.project.activeItem;
+                if (comp && comp instanceof CompItem) {
+                    for (i = 1; i <= comp.numLayers; i++) {
+                        layer = comp.layer(i);
+                        add({
+                            id: "layer:" + layer.index + ":" + layer.name,
+                            label: layer.name,
+                            type: "layer",
+                            source: "project",
+                            matchName: layer.name,
+                            category: "Layer",
+                            keywords: ["layer", layer.name, "index " + layer.index]
+                        });
+                    }
+                }
+            } catch (e6) {}
+
+            try {
+                root = new Folder(Folder.userData.fsName + "/Adobe/After Effects/Scripts");
+                if (root.exists) {
+                    files = root.getFiles("*.jsx");
+                    for (i = 0; i < files.length; i++) {
+                        file = files[i];
+                        add({
+                            id: "script:" + file.fsName,
+                            label: file.name,
+                            type: "script",
+                            source: "script",
+                            matchName: file.fsName,
+                            category: "Script",
+                            keywords: ["script", "jsx", file.name]
+                        });
+                    }
+                }
+            } catch (e7) {}
+
+            try {
+                if (app.fonts && app.fonts.allFonts) {
+                    for (i = 0; i < app.fonts.allFonts.length; i++) {
+                        font = app.fonts.allFonts[i];
+                        displayName = font.familyName || font.postScriptName || font.name;
+                        if (displayName) {
+                            add({
+                                id: "font:" + displayName,
+                                label: displayName,
+                                type: "font",
+                                source: "project",
+                                matchName: font.postScriptName || displayName,
+                                category: "Font",
+                                keywords: ["font", "typeface", displayName, font.postScriptName || ""]
+                            });
+                        }
+                    }
+                }
+            } catch (e8) {}
+
+            return entries;
+        },
+
+        openCompByName: function (params) {
+            var name = params.name || "";
+            var i, item;
+            if (!app.project || !name) {
+                return { opened: false, error: "Composition name required" };
+            }
+            for (i = 1; i <= app.project.numItems; i++) {
+                item = app.project.item(i);
+                if (item instanceof CompItem && item.name === name) {
+                    app.project.activeItem = item;
+                    item.openInViewer();
+                    return { opened: true, name: name };
+                }
+            }
+            return { opened: false, error: "Composition not found: " + name };
+        },
+
+        runScriptFile: function (params) {
+            var path = params.path || params.name || "";
+            var file;
+            if (!path) {
+                return { ran: false, error: "Script path required" };
+            }
+            file = new File(path);
+            if (!file.exists) {
+                return { ran: false, error: "Script not found: " + path };
+            }
+            $.evalFile(file);
+            return { ran: true, path: file.fsName };
         }
 
     };

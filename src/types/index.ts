@@ -36,11 +36,12 @@ export type CommandSource =
   | 'third_party'
   | 'script'
   | 'preset'
+  | 'project'
   | 'ai_action';
 
 // ── 4. CommandParams ─────────────────────────────────────────
 export interface CommandParams {
-  [key: string]: string | number | boolean | string[];
+  [key: string]: string | number | boolean | string[] | number[];
 }
 
 // ── 6. AstronCommandResult ───────────────────────────────────
@@ -70,7 +71,7 @@ export interface AstronCommand {
 export interface IndexEntry {
   id: string;
   label: string;
-  type: 'command' | 'effect' | 'script' | 'preset' | 'ai_action';
+  type: 'command' | 'effect' | 'script' | 'preset' | 'layer' | 'comp' | 'font' | 'ai_action';
   module?: ModuleName;
   source: CommandSource;
   keywords: string[];

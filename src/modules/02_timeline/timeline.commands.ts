@@ -6,6 +6,17 @@ function getPattern(params?: CommandParams): string {
   return String((params as any)?.pattern ?? (params as any)?.param0 ?? '')
 }
 
+function getLabelIndices(params?: CommandParams): number[] {
+  const raw = (params as any)?.labelIndices ?? (params as any)?.labels ?? (params as any)?.param0 ?? ''
+  if (Array.isArray(raw)) {
+    return raw.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+  }
+  return String(raw)
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((value) => Number.isFinite(value))
+}
+
 export const timelineCommands: AstronCommand[] = [
   {
     id: 'timeline:select:after',
@@ -118,6 +129,14 @@ export const timelineCommands: AstronCommand[] = [
     module: 'timeline' as ModuleName,
     keywords: ['select', 'ai', 'illustrator', 'vector', 'footage', 'layer'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByType('ai')
+  },
+  {
+    id: 'timeline:select:label',
+    label: 'Select Label Colors',
+    description: 'Select layers whose label color is in the provided comma-separated label index list.',
+    module: 'timeline' as ModuleName,
+    keywords: ['select', 'label', 'color', 'colour', 'multi', 'filter', 'layers'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => timelineModule.selectByLabelColor(getLabelIndices(params))
   },
   {
     id: 'timeline:invert',

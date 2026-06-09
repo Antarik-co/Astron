@@ -55,7 +55,23 @@ export class CSInterfaceBridge {
     }
 
     return new Promise<ExtendScriptResult>((resolve) => {
+      let settled = false
+      const timer = window.setTimeout(() => {
+        if (!settled) {
+          settled = true
+          resolve({
+            success: false,
+            error: 'ExtendScript timed out after 15 seconds',
+          })
+        }
+      }, 15000)
+
       this.cs.evalScript(script, (result: string) => {
+        if (settled) {
+          return
+        }
+        settled = true
+        window.clearTimeout(timer)
         try {
           resolve({ success: true, data: JSON.parse(result) });
         } catch {
@@ -64,6 +80,37 @@ export class CSInterfaceBridge {
         }
       });
     });
+  }
+
+  loadExtendScripts(): Promise<ExtendScriptResult> {
+    if (this.cs === null) {
+      return Promise.resolve({
+        success: false,
+        error: 'Not in CEP environment (dev mode)',
+      })
+    }
+
+    const extensionPath = this.cs.getSystemPath('extension')
+    const normalizedPath = String(extensionPath || '').replace(/\\/g, '/')
+    const files = [
+      'extendscript/core.jsx',
+      'extendscript/effects.jsx',
+      'extendscript/modules/motion.extendscript.jsx',
+      'extendscript/modules/timeline.extendscript.jsx',
+      'extendscript/modules/effects.extendscript.jsx',
+      'extendscript/modules/rig.extendscript.jsx',
+      'extendscript/modules/3d.extendscript.jsx',
+      'extendscript/modules/audio.extendscript.jsx',
+      'extendscript/modules/color.extendscript.jsx',
+      'extendscript/modules/text.extendscript.jsx',
+      'extendscript/modules/export.extendscript.jsx',
+      'extendscript/modules/organize.extendscript.jsx',
+      'extendscript/modules/automate.extendscript.jsx',
+      'extendscript/modules/ai_studio.extendscript.jsx',
+    ]
+
+    const script = `(function(){var base=${JSON.stringify(normalizedPath)};var files=${JSON.stringify(files)};for(var i=0;i<files.length;i++){var f=new File(base+"/"+files[i]);if(!f.exists){throw new Error("Missing ExtendScript file: "+f.fsName);}$.evalFile(f);}return JSON.stringify({success:true,loaded:files.length});}())`
+    return this.evalScript(script)
   }
 
   // -------------------------------------------------------------------------
@@ -186,6 +233,9 @@ export const evalScript = (script: string): Promise<ExtendScriptResult> =>
 export const callExtendScript = (
   msg: ExtendScriptMessage
 ): Promise<ExtendScriptResult> => csBridge.callExtendScript(msg);
+
+export const loadExtendScripts = (): Promise<ExtendScriptResult> =>
+  csBridge.loadExtendScripts();
 
 /**
  * Sequentially evaluate multiple ExtendScript strings.

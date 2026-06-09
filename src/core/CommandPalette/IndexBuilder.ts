@@ -15,6 +15,8 @@ interface AnimationPreset {
   category?: string
 }
 
+type DynamicIndexEntry = IndexEntry
+
 const FALLBACK_EFFECTS: InstalledEffect[] = [
   { displayName: 'Gaussian Blur', matchName: 'ADBE Gaussian Blur 2', category: 'Blur & Sharpen' },
   { displayName: 'Fast Box Blur', matchName: 'ADBE Box Blur2', category: 'Blur & Sharpen' },
@@ -127,10 +129,11 @@ export class IndexBuilder {
 
   public async build(): Promise<void> {
     const astronCommands = this.buildAstronCommands()
+    const dynamicEntries = await this.buildDynamicHostIndex()
     const effects = await this.buildEffects()
     const presets = await this.buildAnimationPresets()
     this.isBuilt = true
-    fuzzySearch.buildIndex([...astronCommands, ...effects, ...presets])
+    fuzzySearch.buildIndex([...astronCommands, ...effects, ...presets, ...dynamicEntries])
   }
 
   public addThirdPartyEffect(name: string, pluginName: string): void {
@@ -166,6 +169,28 @@ export class IndexBuilder {
     scanned.forEach((effect) => byMatchName.set(effect.matchName || effect.displayName, effect))
 
     return Array.from(byMatchName.values()).map(effectToEntry)
+  }
+
+  private async buildDynamicHostIndex(): Promise<IndexEntry[]> {
+    try {
+      const result = await callExtendScript({
+        module: 'core',
+        action: 'buildFullIndex',
+        params: {},
+      })
+      if (!result.success || !Array.isArray(result.data)) {
+        return []
+      }
+      return result.data.filter((item): item is DynamicIndexEntry => {
+        return typeof item?.id === 'string' &&
+          typeof item?.label === 'string' &&
+          typeof item?.type === 'string' &&
+          typeof item?.source === 'string' &&
+          Array.isArray(item?.keywords)
+      })
+    } catch {
+      return []
+    }
   }
 
   private async buildAnimationPresets(): Promise<IndexEntry[]> {

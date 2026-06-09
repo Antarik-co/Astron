@@ -22,6 +22,14 @@ export class TimelineModule {
     return callExtendScript({ action: 'selectByType', module: 'timeline', params: { layerType } })
   }
 
+  selectByLabelColor(labelIndices: number[]): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'selectByLabelColor', module: 'timeline', params: { labelIndices } })
+  }
+
+  selectLayerByName(name: string): Promise<AstronCommandResult> {
+    return callExtendScript({ action: 'selectLayerByName', module: 'timeline', params: { name } })
+  }
+
   invertSelection(): Promise<AstronCommandResult> {
     return callExtendScript({ action: 'invertSelection', module: 'timeline', params: {} })
   }
