@@ -330,22 +330,6 @@ What used to take 15 minutes: **45 seconds.**
 
 ---
 
-## Release Notes
-
-### Astron v1.0.1
-- Completed the LayerStickPro gap-analysis fixes for timeline selection, snapping, status, and gap cleanup.
-- Added start-time based layer selection for precomps and time-remapped layers.
-- Added full LSP smart-filter coverage for adjustment, null, video footage, audio, shy, guide, PSD, AI, shape, and precomp layers.
-- Added Snap To Previous Layer and Fill Timeline Gaps commands.
-- Exposed all snap edge modes plus ripple and no-preserve-gap snap commands with frame-accurate behavior.
-- Improved command palette search across Astron commands, native AE effects, bundled CC effects, installed third-party effects, and AE `.ffx` animation presets.
-- Wired search results for AE effects to apply exact match names to selected layers.
-- Wired search results for animation presets to apply the preset file to selected layers.
-- Activated the AI panel flow and fixed LocalAI suggestions to return executable Astron command IDs.
-- Removed hardcoded cloud AI keys from source; configure keys via localStorage or environment-backed config.
-
----
-
 ## 🏗 Architecture
 
 ```
