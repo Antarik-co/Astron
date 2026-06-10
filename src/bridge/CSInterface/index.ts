@@ -1,26 +1,6 @@
-/**
- * src/bridge/CSInterface/index.ts
- * Astron — AE Plugin
- *
- * T010 — CSInterface Bridge
- * Bridges the CEP panel (HTML/JS) to After Effects via the Adobe CSInterface API.
- * Delegates all ExtendScript execution through the global `Astron` object defined
- * in core.jsx (ExtendScript side).
- *
- * Depends on: T003 (types/index.ts — ExtendScriptMessage, ExtendScriptResult)
- */
-
 import { ExtendScriptMessage, ExtendScriptResult } from '../../types/index';
 
-// ---------------------------------------------------------------------------
-// CSInterfaceBridge Class
-// ---------------------------------------------------------------------------
-
 export class CSInterfaceBridge {
-  /**
-   * Native CSInterface instance.
-   * Set to `null` when running outside a CEP environment (dev / browser mode).
-   */
   private cs: any;
 
   constructor() {
@@ -30,22 +10,10 @@ export class CSInterfaceBridge {
           ? new (window as any).CSInterface()
           : null;
     } catch {
-      // Guard against environments where window is undefined (e.g. SSR, Node tests)
       this.cs = null;
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Core eval
-  // -------------------------------------------------------------------------
-
-  /**
-   * Evaluates a raw ExtendScript string inside After Effects.
-   *
-   * - Dev mode (cs === null): resolves immediately with a descriptive error.
-   * - CEP mode: wraps the CSInterface callback in a Promise and attempts JSON
-   *   parsing of the result string; falls back to the raw string on parse failure.
-   */
   evalScript(script: string): Promise<ExtendScriptResult> {
     if (this.cs === null) {
       return Promise.resolve({
@@ -61,37 +29,63 @@ export class CSInterfaceBridge {
           settled = true
           resolve({
             success: false,
-            error: 'ExtendScript timed out after 15 seconds',
+            error: 'ExtendScript timed out',
           })
         }
-      }, 15000)
+      }, 30000)
 
       this.cs.evalScript(script, (result: string) => {
-        if (settled) {
-          return
-        }
+        if (settled) { return }
         settled = true
         window.clearTimeout(timer)
+
+        if (typeof result !== 'string' || result.indexOf('EvalScript ') === 0 || result.indexOf('EvalScript.') === 0) {
+          console.error('[Astron] ExtendScript failed:', result)
+          return resolve({ success: false, error: result || 'EvalScript error' });
+        }
+
         try {
           resolve({ success: true, data: JSON.parse(result) });
         } catch {
-          // Result is a plain string (not JSON) — return as-is
           resolve({ success: true, data: result });
         }
       });
     });
   }
 
-  loadExtendScripts(): Promise<ExtendScriptResult> {
+  async testBridge(): Promise<ExtendScriptResult> {
     if (this.cs === null) {
-      return Promise.resolve({
-        success: false,
-        error: 'Not in CEP environment (dev mode)',
-      })
+      return { success: false, error: 'CEP bridge not available' }
+    }
+    return this.evalScript('"bridge_ok"')
+  }
+
+  private fetchText(url: string): Promise<string> {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest()
+      xhr.open('GET', url, true)
+      xhr.onload = function() {
+        if (xhr.status === 0 || xhr.status === 200) {
+          resolve(xhr.responseText)
+        } else {
+          reject(new Error('XHR ' + xhr.status + ' ' + xhr.statusText))
+        }
+      }
+      xhr.onerror = function() {
+        reject(new Error('XHR failed for ' + url))
+      }
+      xhr.send()
+    })
+  }
+
+  async loadExtendScripts(): Promise<ExtendScriptResult> {
+    if (this.cs === null) {
+      return { success: false, error: 'Not in CEP environment (dev mode)' }
     }
 
-    const extensionPath = this.cs.getSystemPath('extension')
-    const normalizedPath = String(extensionPath || '').replace(/\\/g, '/')
+    const extPath = this.getSystemPath('extension') || ''
+    let nativePath = extPath.replace(/^file:\/\/\//i, '').replace(/\\/g, '/')
+
     const files = [
       'extendscript/core.jsx',
       'extendscript/effects.jsx',
@@ -109,30 +103,42 @@ export class CSInterfaceBridge {
       'extendscript/modules/ai_studio.extendscript.jsx',
     ]
 
-    const script = `(function(){var base=${JSON.stringify(normalizedPath)};var files=${JSON.stringify(files)};for(var i=0;i<files.length;i++){var f=new File(base+"/"+files[i]);if(!f.exists){throw new Error("Missing ExtendScript file: "+f.fsName);}$.evalFile(f);}return JSON.stringify({success:true,loaded:files.length});}())`
-    return this.evalScript(script)
+    const results: Array<{ path: string; success: boolean; error?: string }> = []
+
+    for (const file of files) {
+      const fullPath = nativePath + '/' + file
+      const escapedPath = fullPath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+      const script = '$.evalFile(new File("' + escapedPath + '"))'
+
+      try {
+        const evalResult = await this.evalScript(script)
+        if (!evalResult.success) {
+          results.push({ path: file, success: false, error: evalResult.error || 'evalFile failed' })
+        } else {
+          results.push({ path: file, success: true })
+        }
+      } catch (err) {
+        results.push({ path: file, success: false, error: (err as Error).message || 'evalFile threw' })
+      }
+    }
+
+    const loaded = results.filter(r => r.success).length
+    const errors = results.filter(r => !r.success).map(r => r.path + ': ' + r.error)
+
+    if (loaded === 0 && errors.length > 0) {
+      return { success: false, error: 'All ExtendScript files failed: ' + errors.join('; ') }
+    }
+
+    return {
+      success: true,
+      data: { loaded, total: files.length, errors: errors.length > 0 ? errors.join('; ') : '' }
+    }
   }
 
-  // -------------------------------------------------------------------------
-  // Structured message dispatch
-  // -------------------------------------------------------------------------
-
-  /**
-   * Serialises an `ExtendScriptMessage` and dispatches it to the global
-   * `Astron.handle()` function defined in core.jsx.
-   *
-   * This is the primary call surface for all Astron module commands —
-   * every module action should route through here rather than calling
-   * `evalScript` directly with raw JSX strings.
-   *
-   * @param message - Typed message object consumed by Astron.handle()
-   */
   callExtendScript(message: ExtendScriptMessage): Promise<ExtendScriptResult> {
-    const scriptCall = `Astron.handle(${JSON.stringify(message)})`;
+    const scriptCall = 'Astron.handle(' + JSON.stringify(message) + ')';
     return this.evalScript(scriptCall).then((result) => {
-      if (!result.success) {
-        return result;
-      }
+      if (!result.success) { return result; }
 
       const payload = result.data as any;
       if (payload && typeof payload === 'object' && typeof payload.success === 'boolean') {
@@ -149,27 +155,6 @@ export class CSInterfaceBridge {
     });
   }
 
-  // -------------------------------------------------------------------------
-  // Batch execution
-  // -------------------------------------------------------------------------
-
-  /**
-   * Runs an array of raw ExtendScript strings **sequentially** (one after
-   * another, not in parallel).
-   *
-   * Rationale: AE's ExtendScript engine is single-threaded. Firing concurrent
-   * evalScript calls can corrupt the undo stack and cause race conditions on
-   * large comps. Sequential execution via a reduce + promise chain guarantees
-   * ordered, safe batching — consistent with the performance rule from the
-   * Astron architecture docs ("Group all operations into a single evalScript
-   * call; never call once per layer").
-   *
-   * For callers that want a single batched JSX string (faster), prefer building
-   * one composite script and calling `evalScript` directly.
-   *
-   * @param scripts - Ordered list of ExtendScript strings to evaluate
-   * @returns Array of results in the same order as the input scripts
-   */
   batchEvalScript(scripts: string[]): Promise<ExtendScriptResult[]> {
     return scripts.reduce<Promise<ExtendScriptResult[]>>(
       (chain, script) =>
@@ -180,56 +165,20 @@ export class CSInterfaceBridge {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Utility helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Returns `true` when a live CSInterface instance is available.
-   * Use this to gate CEP-only UI or features in dev/test environments.
-   */
   isConnected(): boolean {
     return this.cs !== null;
   }
 
-  /**
-   * Retrieves a system path from CSInterface (e.g. application, extension,
-   * or desktop paths). Returns an empty string in dev mode.
-   *
-   * @param pathType - One of the CSInterface SystemPath constants
-   *   e.g. `SystemPath.APPLICATION`, `SystemPath.EXTENSION`
-   */
   getSystemPath(pathType: string): string {
     return this.cs ? this.cs.getSystemPath(pathType) : '';
   }
 }
 
-// ---------------------------------------------------------------------------
-// Singleton instance
-// ---------------------------------------------------------------------------
-
-/**
- * Shared singleton bridge instance.
- * Import this (or the standalone functions below) throughout Astron's
- * module layer — do not create additional `CSInterfaceBridge` instances.
- */
 export const csBridge = new CSInterfaceBridge();
 
-// ---------------------------------------------------------------------------
-// Standalone convenience functions (delegate to singleton)
-// ---------------------------------------------------------------------------
-
-/**
- * Evaluate a raw ExtendScript string.
- * @see CSInterfaceBridge.evalScript
- */
 export const evalScript = (script: string): Promise<ExtendScriptResult> =>
   csBridge.evalScript(script);
 
-/**
- * Dispatch a typed Astron message to `Astron.handle()` in core.jsx.
- * @see CSInterfaceBridge.callExtendScript
- */
 export const callExtendScript = (
   msg: ExtendScriptMessage
 ): Promise<ExtendScriptResult> => csBridge.callExtendScript(msg);
@@ -237,10 +186,6 @@ export const callExtendScript = (
 export const loadExtendScripts = (): Promise<ExtendScriptResult> =>
   csBridge.loadExtendScripts();
 
-/**
- * Sequentially evaluate multiple ExtendScript strings.
- * @see CSInterfaceBridge.batchEvalScript
- */
 export const batchEvalScript = (
   scripts: string[]
 ): Promise<ExtendScriptResult[]> => csBridge.batchEvalScript(scripts);

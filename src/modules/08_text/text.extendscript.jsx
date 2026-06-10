@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function isTextLayer(layer) {
         return layer instanceof TextLayer;

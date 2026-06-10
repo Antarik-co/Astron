@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function getParam(params, name, fallback) {
         if (params && params[name] !== undefined && params[name] !== null) {

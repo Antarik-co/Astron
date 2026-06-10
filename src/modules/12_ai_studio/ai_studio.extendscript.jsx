@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function countEffects(comp) {
         var count = 0;
@@ -106,7 +105,7 @@
 
             try {
                 for (i = 0; i < commands.length; i += 1) {
-                    results.push(Astron.handle(JSON.stringify(commands[i])));
+                    results.push(Astron.handle(Astron.utils.safeJSONStringify(commands[i])));
                 }
             } finally {
                 Astron.utils.endUndo();

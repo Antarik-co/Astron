@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function isArray(value) {
         return value && value.constructor === Array;

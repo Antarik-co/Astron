@@ -14,7 +14,7 @@
  *
  * Usage: npm run package
  *
- * Output: release/Astron-v1.0.1.zxp
+ * Output: release/Astron-v1.0.2.zxp
  */
 
 const { execSync } = require('child_process');
@@ -24,7 +24,7 @@ const fs = require('fs');
 // ── Configuration ──────────────────────────────────────────────
 const EXTENSION_ID = 'co.antarik.astron';
 const VERSION = require('../package.json').version;
-const CERT_PASSWORD = process.env.ASTRON_CERT_PASSWORD || '';
+const CERT_PASSWORD = process.env.ASTRON_CERT_PASSWORD || 'astronpassword123!';
 const CERT_COUNTRY = 'IN';
 const CERT_STATE = 'India';
 const CERT_ORG = 'Antarik by JPN STUDIO';
@@ -35,8 +35,9 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.join(rootDir, 'dist');
 const releaseDir = path.join(rootDir, 'release');
 const toolsDir = path.join(rootDir, 'tools');
-const certFile = path.join(toolsDir, 'astron-cert.p12');
+const certFile = path.join(rootDir, 'mycert.p12');
 const outputZxp = path.join(releaseDir, `Astron-v${VERSION}.zxp`);
+const CERT_PASSWORD_FALLBACK = 'astronpassword123!';
 
 // Try to find ZXPSignCmd
 const possiblePaths = [

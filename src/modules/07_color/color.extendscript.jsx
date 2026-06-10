@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function getAmount(params, fallback) {
         if (params && params.amount !== undefined && params.amount !== null) {

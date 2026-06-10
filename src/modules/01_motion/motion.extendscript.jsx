@@ -1,4 +1,5 @@
 (function () {
+    var Astron = $.global.Astron || {};
     // ─────────────────────────────────────────────────────────────────────────
     // Astron — MODULE 01: MOTION
     // motion.extendscript.jsx
@@ -307,7 +308,7 @@
                 var easeIn     = easeInArr[0];
                 var easeOut    = easeOutArr[0];
 
-                var easingData = JSON.stringify({
+                var easingData = Astron.utils.safeJSONStringify({
                     easeIn:  { influence: easeIn.influence,  speed: easeIn.speed  },
                     easeOut: { influence: easeOut.influence, speed: easeOut.speed }
                 });
@@ -338,10 +339,8 @@
                 return { pasted: false, error: "No copied easing found. Run copyEasing first." };
             }
 
-            var easingData;
-            try {
-                easingData = JSON.parse(rawJson);
-            } catch (e) {
+            var easingData = Astron.utils.safeJSONParse(rawJson, null);
+            if (!easingData) {
                 Astron.utils.endUndo();
                 return { pasted: false, error: "Stored easing data is corrupted." };
             }

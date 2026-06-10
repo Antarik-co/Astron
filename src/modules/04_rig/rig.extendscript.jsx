@@ -12,16 +12,9 @@
 // =============================================================================
 
 (function () {
-
-    // -------------------------------------------------------------------------
-    // Guards
-    // -------------------------------------------------------------------------
-    if (typeof Astron === "undefined") {
-        throw new Error("[Astron:rig] Astron global not found. Load core.jsx first.");
-    }
-    if (typeof Astron.utils === "undefined") {
-        throw new Error("[Astron:rig] Astron.utils not found. Load core.jsx first.");
-    }
+    var Astron = $.global.Astron || {};
+    Astron.utils = Astron.utils || {};
+    Astron.handlers = Astron.handlers || {};
 
     // -------------------------------------------------------------------------
     // Internal helpers

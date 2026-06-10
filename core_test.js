@@ -55,12 +55,9 @@
     //      Failure: '{"success":false,"error":"<message>"}'
     // -------------------------------------------------------------------------
 
-    Astron.handle = function(messageJSON) { try { var f = new File(Folder.temp.fsName + "/astron_log.txt"); f.open("a"); f.writeln("Handle: " + messageJSON); f.close(); } catch(e) {} 
+    Astron.handle = function (messageJSON) {
         try {
-            var msg = messageJSON;
-            if (typeof messageJSON === "string") {
-                msg = Astron.utils.safeJSONParse(messageJSON, null);
-            }
+            var msg = Astron.utils.safeJSONParse(messageJSON, null);
 
             // Validate minimum required fields
             if (!msg || typeof msg.module === "undefined" || typeof msg.action === "undefined") {
@@ -105,9 +102,6 @@
         if (str === null || str === undefined || str === "") {
             return fallback !== undefined ? fallback : null;
         }
-        if (typeof str === "object") {
-            return str;
-        }
         try {
             if (typeof JSON !== "undefined" && JSON.parse) {
                 return JSON.parse(str);
@@ -122,40 +116,14 @@
      * Safely stringify a JSON object.
      */
     Astron.utils.safeJSONStringify = function(obj) {
-        if (typeof JSON !== "undefined" && JSON.stringify) {
-            try {
+        try {
+            if (typeof JSON !== "undefined" && JSON.stringify) {
                 return JSON.stringify(obj);
-            } catch (e) {
-                // fallback to custom
             }
+            return '{"error":"Stringify not supported natively in this host"}';
+        } catch (e) {
+            return '{"error":"Stringify failed"}';
         }
-        
-        var t = typeof obj;
-        if (t !== "object" || obj === null) {
-            if (t === "string") {
-                return '"' + obj.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"';
-            }
-            return String(obj);
-        }
-        
-        var n, v, json = [], arr = (obj && obj.constructor === Array);
-        for (n in obj) {
-            if (obj.hasOwnProperty(n)) {
-                v = obj[n];
-                t = typeof v;
-                if (t !== "function" && t !== "undefined") {
-                    if (t === "string") {
-                        v = '"' + v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '"';
-                    } else if (t === "object" && v !== null) {
-                        v = Astron.utils.safeJSONStringify(v);
-                    } else {
-                        v = String(v);
-                    }
-                    json.push((arr ? "" : '"' + n + '":') + String(v));
-                }
-            }
-        }
-        return (arr ? "[" : "{") + String(json.join(",")) + (arr ? "]" : "}");
     };
 
 
@@ -382,7 +350,7 @@
 
             return {
                 status:    "ok",
-                version:   "1.0.2",
+                version:   "1.0.1",
                 plugin:    "Astron",
                 activeComp: activeCompName
             };
@@ -423,7 +391,7 @@
 
             try {
                 if (app.effects && app.effects.length) {
-                    for (i = 0; i < app.effects.length; i++) {
+                    for (i = 0; i <= app.effects.length; i++) {
                         fx = app.effects[i] || app.effects[i + 1];
                         if (fx) {
                             add({

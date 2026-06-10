@@ -1,0 +1,1 @@
+const fs=require("fs"); function fix(f) { let c = fs.readFileSync(f, "utf8"); c = c.replace(/\b(\w+)\.Effects\b/g, "$1.property(\"ADBE Effect Parade\")"); fs.writeFileSync(f, c); } fix("src/bridge/extendscript/effects.jsx"); fix("src/modules/03_effects/effects.extendscript.jsx");

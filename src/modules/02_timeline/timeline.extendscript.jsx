@@ -1,4 +1,5 @@
 (function () {
+    var Astron = $.global.Astron || {};
     // ─────────────────────────────────────────────────────────────────────────
     // Astron — MODULE 02: TIMELINE
     // timeline.extendscript.jsx

@@ -2,11 +2,11 @@
 <ExtensionManifest
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   ExtensionBundleId="co.antarik.astron"
-  ExtensionBundleVersion="1.0.1"
+  ExtensionBundleVersion="2.0.0"
   Version="11.0">
 
   <ExtensionList>
-    <Extension Id="co.antarik.astron.panel" Version="1.0.1"/>
+    <Extension Id="co.antarik.astron.panel" Version="2.0.0"/>
   </ExtensionList>
 
   <ExecutionEnvironment>
@@ -27,7 +27,6 @@
 
         <Resources>
           <MainPath>./index.html</MainPath>
-          <ScriptPath>./extendscript/core.jsx</ScriptPath>
           <CEFCommandLine>
             <Parameter>--allow-file-access-from-files</Parameter>
             <Parameter>--allow-file-access</Parameter>

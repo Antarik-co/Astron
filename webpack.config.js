@@ -1,6 +1,16 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+
+function collectEnvKeys(prefix) {
+  var keys = [];
+  for (var i = 1; i <= 10; i++) {
+    var val = process.env[prefix + "_" + i];
+    if (val) { keys.push(val); }
+  }
+  return keys.join(",");
+}
 
 const isDev = (process.env.NODE_ENV || "development") === "development";
 
@@ -38,6 +48,10 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      __ASTRON_GROQ_KEYS__: JSON.stringify(collectEnvKeys("GROQ_KEY")),
+      __ASTRON_GEMINI_KEYS__: JSON.stringify(collectEnvKeys("GEMINI_KEY")),
+    }),
     new HtmlWebpackPlugin({
       template: "./src/index.html",
       filename: "index.html",

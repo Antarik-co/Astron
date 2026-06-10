@@ -14,10 +14,16 @@
 // =============================================================================
 
 (function () {
-    var Astron = $.global.Astron || {};
-    Astron.utils = Astron.utils || {};
-    Astron.utils.effects = Astron.utils.effects || {};
-    Astron.handlers = Astron.handlers || {};
+
+    // -------------------------------------------------------------------------
+    // Guard: Astron global must exist (provided by core.jsx / T011)
+    // -------------------------------------------------------------------------
+    if (typeof Astron === "undefined") {
+        throw new Error("[Astron:effects] Astron global not found. Load core.jsx first.");
+    }
+    if (typeof Astron.utils === "undefined" || typeof Astron.utils.effects === "undefined") {
+        throw new Error("[Astron:effects] Astron.utils.effects not found. Load effects utils first.");
+    }
 
     // -------------------------------------------------------------------------
     // Internal helpers
@@ -405,7 +411,7 @@
 
         try {
             if (app.effects && app.effects.length) {
-                for (i = 0; i < app.effects.length; i++) {
+                for (i = 0; i <= app.effects.length; i++) {
                     fx = app.effects[i] || app.effects[i + 1];
                     if (fx) {
                         effects.push({
@@ -528,18 +534,17 @@
     }
 
     // -------------------------------------------------------------------------
-    // Register handler namespace (extend — do NOT overwrite bridge handlers)
+    // Register handler namespace
     // -------------------------------------------------------------------------
-    if (typeof Astron.handlers.effects === "undefined") {
-        Astron.handlers.effects = {};
-    }
-    Astron.handlers.effects.addEffect = addEffect;
-    Astron.handlers.effects.applyStack = applyStack;
-    Astron.handlers.effects.saveStack = saveStack;
-    Astron.handlers.effects.clearEffects = clearEffects;
-    Astron.handlers.effects.applyGlow = applyGlow;
-    Astron.handlers.effects.scanInstalledEffects = scanInstalledEffects;
-    Astron.handlers.effects.scanAnimationPresets = scanAnimationPresets;
-    Astron.handlers.effects.applyAnimationPreset = applyAnimationPreset;
+    Astron.handlers.effects = {
+        addEffect:     addEffect,
+        applyStack:    applyStack,
+        saveStack:     saveStack,
+        clearEffects:  clearEffects,
+        applyGlow:     applyGlow,
+        scanInstalledEffects: scanInstalledEffects,
+        scanAnimationPresets: scanAnimationPresets,
+        applyAnimationPreset: applyAnimationPreset
+    };
 
 }());

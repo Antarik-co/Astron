@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function setLightIntensity(lightLayer, intensity) {
         var options = lightLayer.property("ADBE Light Options Group");
@@ -123,7 +122,7 @@
 
             try {
                 for (i = 0; i < commands.length; i += 1) {
-                    Astron.handle(JSON.stringify(commands[i]));
+                    Astron.handle(Astron.utils.safeJSONStringify(commands[i]));
                 }
             } finally {
                 Astron.utils.endUndo();

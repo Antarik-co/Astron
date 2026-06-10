@@ -1,7 +1,6 @@
 (function () {
-    if (!Astron.handlers) {
-        Astron.handlers = {};
-    }
+    var Astron = $.global.Astron || {};
+    Astron.handlers = Astron.handlers || {};
 
     function isMissingFootage(item) {
         return item instanceof FootageItem && item.mainSource && item.mainSource.isMissing;
