@@ -11,7 +11,8 @@ export const aiStudioCommands: AstronCommand[] = [
     module: 'ai_studio' as ModuleName,
     keywords: ['ask', 'ai', 'question', 'help', 'assistant', 'intelligent'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
-      return aiStudioModule.query((params as any)?.param0 as string ?? '')
+      const query = String((params as any)?.query ?? (params as any)?.param0 ?? '')
+      return aiStudioModule.query(query)
     }
   },
   {
@@ -21,7 +22,8 @@ export const aiStudioCommands: AstronCommand[] = [
     module: 'ai_studio' as ModuleName,
     keywords: ['suggest', 'ai', 'next', 'hint', 'recommend'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
-      const suggestions = aiStudioModule.getSuggestions(String((params as any)?.context ?? ''))
+      const context = String((params as any)?.context ?? (params as any)?.param0 ?? '')
+      const suggestions = aiStudioModule.getSuggestions(context)
       return { success: true, data: { suggestions } }
     }
   },

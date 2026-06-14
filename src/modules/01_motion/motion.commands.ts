@@ -70,7 +70,9 @@ export const motionCommands: AstronCommand[] = [
     module: 'motion' as ModuleName,
     keywords: ['stagger', 'cascade', 'delay', 'offset', 'timing', 'layers'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
-      return motionModule.applyStagger(100)
+      const delayMs = Number((params as any)?.delayMs ?? (params as any)?.param0 ?? 100)
+      const direction = String((params as any)?.direction ?? 'right')
+      return motionModule.applyStagger(delayMs, direction)
     }
   },
   {
@@ -80,7 +82,10 @@ export const motionCommands: AstronCommand[] = [
     module: 'motion' as ModuleName,
     keywords: ['bounce', 'physics', 'height', 'decay', 'elastic'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
-      return motionModule.applyBounce()
+      const height = Number((params as any)?.height ?? 50)
+      const decay = Number((params as any)?.decay ?? 0.7)
+      const elasticity = Number((params as any)?.elasticity ?? 1.2)
+      return motionModule.applyBounce(height, decay, elasticity)
     }
   },
   {
@@ -90,7 +95,9 @@ export const motionCommands: AstronCommand[] = [
     module: 'motion' as ModuleName,
     keywords: ['wiggle', 'shake', 'noise', 'random', 'vibrate'],
     execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
-      return motionModule.applyWiggle()
+      const frequency = Number((params as any)?.frequency ?? 2)
+      const amplitude = Number((params as any)?.amplitude ?? 20)
+      return motionModule.applyWiggle(frequency, amplitude)
     }
   },
   {

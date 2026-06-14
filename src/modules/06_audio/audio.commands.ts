@@ -6,10 +6,13 @@ export const audioCommands: AstronCommand[] = [
   {
     id: 'audio:beats',
     label: 'Detect Beats',
-    description: 'Detect beats and place comp markers.',
+    description: 'Detect beats and place comp markers at a given BPM.',
     module: 'audio' as ModuleName,
     keywords: ['beat', 'detect', 'bpm', 'sync', 'audio', 'music', 'markers', 'rhythm'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => audioModule.detectBeats()
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const bpm = Number((params as any)?.bpm ?? (params as any)?.param0 ?? 120)
+      return audioModule.detectBeats(bpm)
+    }
   },
   {
     id: 'audio:sync',
@@ -22,9 +25,12 @@ export const audioCommands: AstronCommand[] = [
   {
     id: 'audio:tempo',
     label: 'Set Tempo',
-    description: 'Set composition timing to a BPM grid.',
+    description: 'Set composition frame rate to match a BPM grid.',
     module: 'audio' as ModuleName,
     keywords: ['tempo', 'bpm', 'framerate', 'grid', 'timing', 'beat'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => audioModule.setTempo(120)
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const bpm = Number((params as any)?.bpm ?? (params as any)?.param0 ?? 120)
+      return audioModule.setTempo(bpm)
+    }
   }
 ]

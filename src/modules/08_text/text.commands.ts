@@ -49,14 +49,21 @@ export const textCommands: AstronCommand[] = [
     description: 'Replace one font with another in the active composition.',
     module: 'text' as ModuleName,
     keywords: ['font', 'swap', 'replace', 'change', 'text', 'typography'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => textModule.swapFont('', '')
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const oldFont = String((params as any)?.oldFont ?? (params as any)?.param0 ?? '')
+      const newFont = String((params as any)?.newFont ?? (params as any)?.param1 ?? '')
+      return textModule.swapFont(oldFont, newFont)
+    }
   },
   {
-    id: 'text:typewriter',
-    label: 'Apply Typewriter',
-    description: 'Apply a typewriter reveal using a default speed.',
+    id: 'text:animate:typewriter-speed',
+    label: 'Apply Typewriter (Custom Speed)',
+    description: 'Apply a typewriter reveal with a custom character speed.',
     module: 'text' as ModuleName,
-    keywords: ['typewriter', 'type', 'reveal', 'speed', 'text', 'animate'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => textModule.applyTypewriter(10)
+    keywords: ['typewriter', 'type', 'reveal', 'speed', 'text', 'animate', 'custom'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const speed = Number((params as any)?.speed ?? (params as any)?.param0 ?? 10)
+      return textModule.applyTypewriter(speed)
+    }
   }
 ]

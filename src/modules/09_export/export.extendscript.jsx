@@ -16,6 +16,18 @@
         return ".mp4";
     }
 
+    function getSocialResolution(comp) {
+        var w = comp.width;
+        var h = comp.height;
+        if (w >= 1080 && h >= 1920) {
+            return { width: 1080, height: 1920 };
+        }
+        if (w >= 1920 && h >= 1080) {
+            return { width: 1920, height: 1080 };
+        }
+        return { width: w, height: h };
+    }
+
     function safeName(name) {
         return name.replace(/[\\\/\:\*\?\"\<\>\|]/g, "_");
     }
@@ -35,7 +47,11 @@
         if (format === "lossless") {
             outputModule.applyTemplate("Lossless");
         } else {
-            outputModule.applyTemplate("H.264 - Match Render Settings - 15 Mbps");
+            try {
+                outputModule.applyTemplate("H.264 - Match Render Settings - 15 Mbps");
+            } catch (e) {
+                // Template not available — use default settings
+            }
         }
         return outputModule;
     }
@@ -59,7 +75,7 @@
                 Astron.utils.endUndo();
             }
 
-            return { queued: true, format: format, compName: comp.name };
+            return { queued: true, format: format, compName: comp.name, path: path || "" };
         },
 
         getProjectPath: function (params) {

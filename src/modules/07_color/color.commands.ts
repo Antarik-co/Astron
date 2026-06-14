@@ -49,7 +49,10 @@ export const colorCommands: AstronCommand[] = [
     description: 'Increase saturation on selected layers.',
     module: 'color' as ModuleName,
     keywords: ['saturate', 'saturation', 'vivid', 'color', 'boost'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => colorModule.quickSaturate(30)
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const amount = Number((params as any)?.amount ?? (params as any)?.param0 ?? 30)
+      return colorModule.quickSaturate(amount)
+    }
   },
   {
     id: 'color:warm',
@@ -57,7 +60,10 @@ export const colorCommands: AstronCommand[] = [
     description: 'Warm selected layers with a golden tone.',
     module: 'color' as ModuleName,
     keywords: ['warm', 'temperature', 'golden', 'orange', 'tone'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => colorModule.adjustTemperature('warm', 50)
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const amount = Number((params as any)?.amount ?? (params as any)?.param0 ?? 50)
+      return colorModule.adjustTemperature('warm', amount)
+    }
   },
   {
     id: 'color:cool',
@@ -65,14 +71,20 @@ export const colorCommands: AstronCommand[] = [
     description: 'Cool selected layers with a blue tone.',
     module: 'color' as ModuleName,
     keywords: ['cool', 'cold', 'temperature', 'blue', 'tone'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => colorModule.adjustTemperature('cool', 50)
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const amount = Number((params as any)?.amount ?? (params as any)?.param0 ?? 50)
+      return colorModule.adjustTemperature('cool', amount)
+    }
   },
   {
     id: 'color:lut',
     label: 'Apply LUT',
-    description: 'Apply a color lookup table effect.',
+    description: 'Apply a color lookup table effect to selected layers.',
     module: 'color' as ModuleName,
     keywords: ['lut', 'lookup', 'table', 'color', 'grade', 'apply'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => colorModule.applyLUT('')
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const lutName = String((params as any)?.lutName ?? (params as any)?.param0 ?? '')
+      return colorModule.applyLUT(lutName)
+    }
   }
 ]

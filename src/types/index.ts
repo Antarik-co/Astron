@@ -156,7 +156,7 @@ export const DEFAULT_ASTRON_CONFIG: AstronConfig = {
     apiCallCount: 0,
     provider:     'groq',
   },
-  version:        '1.0.1',
+  version:        '2.0.1',
   favorites:      [],
   recentCommands: [],
 };

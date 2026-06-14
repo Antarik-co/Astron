@@ -55,7 +55,7 @@
     //      Failure: '{"success":false,"error":"<message>"}'
     // -------------------------------------------------------------------------
 
-    Astron.handle = function(messageJSON) { try { var f = new File(Folder.temp.fsName + "/astron_log.txt"); f.open("a"); f.writeln("Handle: " + messageJSON); f.close(); } catch(e) {} 
+    Astron.handle = function(messageJSON) {
         try {
             var msg = messageJSON;
             if (typeof messageJSON === "string") {
@@ -382,7 +382,7 @@
 
             return {
                 status:    "ok",
-                version:   "1.0.2",
+                version:   "2.0.1",
                 plugin:    "Astron",
                 activeComp: activeCompName
             };

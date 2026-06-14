@@ -356,17 +356,28 @@ export default function App() {
       } else if (typeof routed === 'string') {
         text = !routed ? 'No matching commands found for "' + prompt + '". Try asking about easing, glow, export, or something else.' : routed
       } else { text = JSON.stringify(routed || payload) }
+
       const found: string[] = []
+
       text.replace(/\[([\w:-]+)\]/g, (_, id) => { if (commandRegistry.get(id)) found.push(id); return _ })
+
+      const rawIds = text.replace(/\[([\w:-]+)\]/g, '').split(',').map((s: string) => s.trim()).filter(Boolean)
+      for (const rawId of rawIds) {
+        if (rawId.indexOf(':') > 0 && commandRegistry.get(rawId) && !found.includes(rawId)) {
+          found.push(rawId)
+        }
+      }
+
+      const cleanText = text.replace(/\[([\w:-]+)\]/g, '$1').trim()
       setAiSuggestions(found)
-      setAiResponse(text.replace(/\[([\w:-]+)\]/g, '$1'))
+      setAiResponse(cleanText)
     }).catch((error) => { setAiResponse(error instanceof Error ? error.message : 'AI request failed'); setAiSuggestions([]) })
   }, [aiInput])
 
   const S = {
     root: { background: 'var(--astron-bg-primary)', height: '100vh', overflow: 'hidden', fontFamily: 'var(--astron-font)', color: 'var(--astron-text-primary)', display: 'flex', flexDirection: 'column' } as const,
-    header: { padding: '10px 14px', borderBottom: '1px solid var(--astron-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 } as const,
-    logo: { fontWeight: 700, fontSize: 13, color: 'var(--astron-text-primary)', letterSpacing: 2, textTransform: 'uppercase' as const } as const,
+    header: { padding: '12px 14px', borderBottom: '1px solid var(--astron-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 } as const,
+    logo: { fontWeight: 700, fontSize: 14, color: 'var(--astron-text-primary)', letterSpacing: 2, textTransform: 'uppercase' as const } as const,
     version: { fontSize: 9, color: 'var(--astron-text-muted)' } as const,
     scrollArea: { flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' } as const,
     searchWrap: { padding: '10px 12px 4px', position: 'relative' as const },
@@ -375,12 +386,12 @@ export default function App() {
     searchInput: { flex: 1, background: 'transparent', border: 'none', color: 'var(--astron-text-primary)', fontSize: 13, padding: '9px 0', outline: 'none', width: '100%' } as const,
     kbd: { marginLeft: 'auto', background: '#0E1428', color: '#4A6A9A', border: '1px solid #1A2238', borderRadius: 3, padding: '1px 5px', fontSize: 9 } as const,
     dropdown: { position: 'absolute' as const, top: '100%', left: 12, right: 12, background: 'var(--astron-bg-secondary)', border: '1px solid var(--astron-border)', borderRadius: 'var(--astron-radius-md)', maxHeight: 280, overflow: 'auto', zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' },
-    resultItem: (selected: boolean) => ({ padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: selected ? '#0E1428' : 'transparent', fontSize: 12, color: selected ? '#D8E4FF' : '#6EA8FF', borderLeft: selected ? '2px solid #0052FF' : '2px solid transparent' } as const),
+    resultItem: (selected: boolean) => ({ padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: selected ? '#0E1428' : 'transparent', fontSize: 12, color: selected ? '#D8E4FF' : '#6EA8FF', borderLeft: selected ? '2px solid #0052FF' : '2px solid transparent' } as const),
     resultBadge: { fontSize: 9, color: '#4A6A9A', textTransform: 'uppercase' as const, flexShrink: 0 } as const,
     noResults: { padding: 12, color: '#4A6A9A', fontSize: 11 },
     grid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, padding: '6px 12px' } as const,
-    catBtn: (color: string) => ({ padding: '10px 4px', background: '#080C18', border: '1px solid ' + color + '44', borderRadius: 'var(--astron-radius-md)', cursor: 'pointer', textAlign: 'center' as const, transition: 'all 0.2s' } as const),
-    catIcon: { fontSize: 20, marginBottom: 3 } as const,
+    catBtn: (color: string) => ({ padding: '12px 4px', background: '#080C18', border: '1px solid ' + color + '44', borderRadius: 'var(--astron-radius-md)', cursor: 'pointer', textAlign: 'center' as const, transition: 'all 0.2s' } as const),
+    catIcon: { fontSize: 22, marginBottom: 3 } as const,
     catLabel: { fontSize: 11, fontWeight: 600, color: '#D8E4FF' } as const,
     catCount: { fontSize: 8, color: '#4A6A9A', marginTop: 2 } as const,
     quickRow: { padding: '4px 12px' } as const,
@@ -388,22 +399,23 @@ export default function App() {
     resultBar: (ok: boolean) => ({ margin: '4px 12px', padding: '5px 8px', background: ok ? 'rgba(0,229,255,0.08)' : 'rgba(231,76,60,0.12)', border: '1px solid ' + (ok ? 'rgba(0,229,255,0.3)' : 'rgba(231,76,60,0.45)'), borderRadius: 6, color: ok ? '#00E5FF' : 'var(--astron-accent-red)', fontSize: 9 } as const),
     aiWrap: { padding: '6px 12px 4px' } as const,
     aiRow: { display: 'flex', gap: 4 } as const,
-    aiInput: { flex: 1, background: '#080C18', border: '1px solid #1A2238', borderRadius: 'var(--astron-radius-md)', color: '#6EA8FF', padding: '7px 9px', fontSize: 12, outline: 'none', width: '100%', boxSizing: 'border-box' as const },
-    aiBtn: { background: '#0052FF', border: 'none', borderRadius: 'var(--astron-radius-md)', color: '#D8E4FF', cursor: 'pointer', fontSize: 11, fontWeight: 600, padding: '7px 12px', whiteSpace: 'nowrap' as const },
+    aiInput: { flex: 1, background: '#080C18', border: '1px solid #1A2238', borderRadius: 'var(--astron-radius-md)', color: '#6EA8FF', padding: '8px 10px', fontSize: 12, outline: 'none', width: '100%', boxSizing: 'border-box' as const },
+    aiBtn: { background: '#0052FF', border: 'none', borderRadius: 'var(--astron-radius-md)', color: '#D8E4FF', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '8px 14px', whiteSpace: 'nowrap' as const },
     aiResp: { marginTop: 4, background: '#080C18', border: '1px solid #1A2238', borderRadius: 'var(--astron-radius-md)', color: '#6EA8FF', fontSize: 11, lineHeight: 1.4, padding: '7px 9px', whiteSpace: 'pre-wrap' as const },
-    aiSuggestionChip: { padding: '3px 8px', fontSize: 10, background: '#0052FF', color: '#D8E4FF', borderRadius: 'var(--astron-radius-md)', cursor: 'pointer', fontWeight: 600 },
-    bottomLinks: { padding: '4px 12px 8px', display: 'flex', gap: 10, flexShrink: 0 } as const,
-    link: { fontSize: 9, color: '#4A6A9A', cursor: 'pointer' } as const,
+    aiSuggestionChip: (cmdId: string) => ({ padding: '6px 12px', fontSize: 11, background: '#0052FF', color: '#D8E4FF', borderRadius: 'var(--astron-radius-md)', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.15s' }),
+    bottomBar: { padding: '8px 12px', display: 'flex', gap: 8, flexShrink: 0, borderTop: '1px solid var(--astron-border)' } as const,
+    allCmdBtn: { flex: 1, padding: '10px 12px', background: '#0052FF', border: 'none', borderRadius: 'var(--astron-radius-md)', color: '#D8E4FF', cursor: 'pointer', fontSize: 12, fontWeight: 700, textAlign: 'center' as const, transition: 'all 0.15s' },
+    hotkeyBtn: { padding: '10px 14px', background: '#0E1428', border: '1px solid #1A2238', borderRadius: 'var(--astron-radius-md)', color: '#6EA8FF', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'all 0.15s' },
     recentWrap: { padding: '4px 12px 6px' } as const,
     recentLabel: { fontSize: 9, color: '#4A6A9A', marginBottom: 4, textTransform: 'uppercase' as const, letterSpacing: 1 } as const,
-    recentChip: { padding: '2px 6px', fontSize: 10, color: '#6EA8FF', cursor: 'pointer', borderRadius: 3, background: '#0E1428', display: 'inline-block' } as const,
+    recentChip: { padding: '3px 8px', fontSize: 10, color: '#6EA8FF', cursor: 'pointer', borderRadius: 4, background: '#0E1428', display: 'inline-block', border: '1px solid #1A2238' } as const,
   }
 
   return (
     <div className="astron-root" style={S.root}>
       <div style={S.header}>
         <span style={S.logo}>ASTRON</span>
-        <span style={S.version}>{csBridge.isConnected() ? 'Connected' : 'Offline'} · v2.0.0</span>
+        <span style={S.version}>{csBridge.isConnected() ? 'Connected' : 'Offline'} · v2.0.1</span>
       </div>
 
       {isLoading ? (
@@ -446,25 +458,36 @@ export default function App() {
             ))}
           </div>
 
-          {/* All Commands toggle */}
-          <div style={{ padding: '2px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span onClick={() => setShowAllCommands(!showAllCommands)} style={{ fontSize: 10, color: '#4A6A9A', cursor: 'pointer', userSelect: 'none' }}>
-              {showAllCommands ? '▾' : '▸'} All Commands ({allCommands.length})
-            </span>
+          {/* All Commands toggle — BIG button */}
+          <div style={{ padding: '4px 12px' }}>
+            <div onClick={() => setShowAllCommands(!showAllCommands)}
+              style={{ padding: '10px 12px', background: showAllCommands ? '#0052FF' : '#080C18', border: '1px solid ' + (showAllCommands ? '#0052FF' : '#1A2238'), borderRadius: 'var(--astron-radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.15s' }}
+              onMouseEnter={e => { if (!showAllCommands) { e.currentTarget.style.background = '#0E1428'; e.currentTarget.style.borderColor = '#0052FF' } }}
+              onMouseLeave={e => { if (!showAllCommands) { e.currentTarget.style.background = '#080C18'; e.currentTarget.style.borderColor = '#1A2238' } }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 700, color: showAllCommands ? '#D8E4FF' : '#6EA8FF' }}>
+                {showAllCommands ? '▾' : '▸'} All Commands ({allCommands.length})
+              </span>
+              <span style={{ fontSize: 10, color: showAllCommands ? '#D8E4FF' : '#4A6A9A' }}>
+                {showAllCommands ? 'Collapse' : 'Expand'}
+              </span>
+            </div>
           </div>
 
           {showAllCommands && Object.keys(commandsByModule).sort().map(mod => (
             <div key={mod} style={{ margin: '0 12px 4px' }}>
-              <div onClick={() => { const n = { ...expandedModules }; n[mod] = !n[mod]; setExpandedModules(n) }} style={{ padding: '4px 8px', cursor: 'pointer', borderRadius: 4, fontSize: 10, color: '#6EA8FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, background: '#080C18', display: 'flex', justifyContent: 'space-between' }}>
+              <div onClick={() => { const n = { ...expandedModules }; n[mod] = !n[mod]; setExpandedModules(n) }}
+                style={{ padding: '6px 10px', cursor: 'pointer', borderRadius: 4, fontSize: 11, color: '#6EA8FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, background: '#080C18', display: 'flex', justifyContent: 'space-between', border: '1px solid #1A2238' }}>
                 <span>{expandedModules[mod] ? '▾' : '▸'} {mod.replace(/^\d+_/, '')}</span>
-                <span style={{ color: '#4A6A9A' }}>{commandsByModule[mod].length}</span>
+                <span style={{ color: '#4A6A9A', fontSize: 10 }}>{commandsByModule[mod].length} commands</span>
               </div>
               {expandedModules[mod] && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: '4px 4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, padding: '4px 2px' }}>
                   {commandsByModule[mod].map(cmd => (
-                    <span key={cmd.id} onClick={() => handleCommandExecute(cmd.id)} style={{ padding: '2px 6px', fontSize: 9, background: '#0E1428', color: '#6EA8FF', borderRadius: 3, cursor: 'pointer', border: '1px solid transparent' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#0052FF'; e.currentTarget.style.color = '#D8E4FF' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#0E1428'; e.currentTarget.style.color = '#6EA8FF' }}
+                    <span key={cmd.id} onClick={() => handleCommandExecute(cmd.id)}
+                      style={{ padding: '5px 8px', fontSize: 10, background: '#0E1428', color: '#6EA8FF', borderRadius: 4, cursor: 'pointer', border: '1px solid #1A2238', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#0052FF'; e.currentTarget.style.color = '#D8E4FF'; e.currentTarget.style.borderColor = '#0052FF' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#0E1428'; e.currentTarget.style.color = '#6EA8FF'; e.currentTarget.style.borderColor = '#1A2238' }}
                     >
                       {cmd.label}
                     </span>
@@ -502,12 +525,19 @@ export default function App() {
               <div>
                 <div style={S.aiResp}>{aiResponse}</div>
                 {aiSuggestions.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                    {aiSuggestions.map(id => (
-                      <span key={id} onClick={() => { handleCommandExecute(id); setAiSuggestions([]); setAiResponse('') }} style={S.aiSuggestionChip}>
-                        ▶ {id.split(':').pop()}
-                      </span>
-                    ))}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                    {aiSuggestions.map(id => {
+                      const cmd = commandRegistry.get(id)
+                      return (
+                        <span key={id} onClick={() => { handleCommandExecute(id); setAiSuggestions([]); setAiResponse('') }}
+                          style={S.aiSuggestionChip(id)}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#0072FF'; e.currentTarget.style.transform = 'scale(1.05)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#0052FF'; e.currentTarget.style.transform = 'scale(1)' }}
+                        >
+                          ▶ {cmd?.label || id.split(':').pop()}
+                        </span>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -527,10 +557,22 @@ export default function App() {
             </div>
           )}
 
-          {/* AI Keys + Hotkeys links */}
-          <div style={S.bottomLinks}>
-            <span onClick={() => { loadKeyInputs(); setShowAiKeys(!showAiKeys) }} style={S.link}>{showAiKeys ? '▾' : '▸'} AI Keys</span>
-            <span onClick={() => setIsHotkeysOpen(true)} style={S.link}>Hotkeys Settings</span>
+          {/* Bottom bar: Hotkeys + AI Keys */}
+          <div style={S.bottomBar}>
+            <span onClick={() => setIsHotkeysOpen(true)}
+              style={S.hotkeyBtn}
+              onMouseEnter={e => { e.currentTarget.style.background = '#0E1428'; e.currentTarget.style.borderColor = '#0052FF' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#0E1428'; e.currentTarget.style.borderColor = '#1A2238' }}
+            >
+              ⌨ Keyboard Shortcuts
+            </span>
+            <span onClick={() => { loadKeyInputs(); setShowAiKeys(!showAiKeys) }}
+              style={{ ...S.hotkeyBtn, flex: 1, textAlign: 'center' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#0052FF' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1A2238' }}
+            >
+              {showAiKeys ? '▾ Hide' : '▸ AI'} Keys
+            </span>
           </div>
 
           {/* AI Keys section */}
@@ -548,21 +590,23 @@ export default function App() {
 
       {/* Hotkeys modal */}
       {isHotkeysOpen && (
-        <div onClick={() => setIsHotkeysOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 50 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: '94vw', maxHeight: '80vh', overflow: 'auto', background: 'var(--astron-bg-secondary)', border: '1px solid var(--astron-border-light)', borderRadius: 8, color: 'var(--astron-text-primary)' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid var(--astron-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: 12 }}>Keyboard Shortcuts</strong>
-              <button onClick={() => setIsHotkeysOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--astron-text-muted)', cursor: 'pointer', fontSize: 11 }}>Close</button>
+        <div onClick={() => setIsHotkeysOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 30 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 640, maxWidth: '96vw', maxHeight: '85vh', overflow: 'auto', background: 'var(--astron-bg-secondary)', border: '1px solid var(--astron-border-light)', borderRadius: 8, color: 'var(--astron-text-primary)' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--astron-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--astron-bg-secondary)', zIndex: 1 }}>
+              <strong style={{ fontSize: 14 }}>Keyboard Shortcuts</strong>
+              <button onClick={() => setIsHotkeysOpen(false)} style={{ background: '#0E1428', border: '1px solid #1A2238', borderRadius: 6, color: '#6EA8FF', cursor: 'pointer', fontSize: 12, padding: '5px 12px', fontWeight: 600 }}>Close</button>
             </div>
             {allCommands.map((command) => {
               const combo = hotkeys[command.id] || ''
               const conflict = combo && AE_CONFLICTS.has(combo)
               return (
-                <div key={command.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, padding: '7px 12px', borderBottom: '1px solid var(--astron-border)', alignItems: 'center', fontSize: 11 }}>
-                  <span>{command.label}</span>
+                <div key={command.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, padding: '9px 16px', borderBottom: '1px solid var(--astron-border)', alignItems: 'center', fontSize: 12 }}>
+                  <span style={{ color: '#D8E4FF' }}>{command.label}</span>
                   {conflict && <span style={{ color: 'var(--astron-accent-yellow)', fontSize: 10 }}>AE conflict</span>}
-                  <button onClick={() => setListeningCommandId(command.id)} style={{ minWidth: 100, background: 'var(--astron-bg-panel)', border: '1px solid ' + (conflict ? 'var(--astron-accent-yellow)' : 'var(--astron-border-light)'), borderRadius: 4, color: conflict ? 'var(--astron-accent-yellow)' : 'var(--astron-text-secondary)', padding: '3px 6px', cursor: 'pointer', fontSize: 10 }}>
-                    {listeningCommandId === command.id ? 'Press keys...' : combo || 'Set shortcut'}
+                  <button onClick={() => setListeningCommandId(command.id)}
+                    style={{ minWidth: 130, padding: '6px 12px', background: listeningCommandId === command.id ? '#0052FF' : '#0E1428', border: '1px solid ' + (conflict ? 'var(--astron-accent-yellow)' : (listeningCommandId === command.id ? '#0052FF' : '#1A2238')), borderRadius: 6, color: conflict ? 'var(--astron-accent-yellow)' : (listeningCommandId === command.id ? '#D8E4FF' : '#6EA8FF'), cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s' }}
+                  >
+                    {listeningCommandId === command.id ? 'Press keys...' : (combo || 'Set shortcut')}
                   </button>
                 </div>
               )

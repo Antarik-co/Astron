@@ -3,7 +3,8 @@ import { callExtendScript } from '../../bridge/CSInterface/index'
 
 export class ExportModule {
   quickExport(format: 'web' | 'lossless' | 'social'): Promise<AstronCommandResult> {
-    return callExtendScript({ action: 'quickExport', module: 'export', params: { format } })
+    const esFormat = format === 'social' ? 'web' : format
+    return callExtendScript({ action: 'quickExport', module: 'export', params: { format: esFormat } })
   }
 
   saveVersionSnapshot(): Promise<AstronCommandResult> {

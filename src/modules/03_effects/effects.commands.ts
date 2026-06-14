@@ -38,10 +38,13 @@ export const effectsCommands: AstronCommand[] = [
   {
     id: 'effects:stack:save',
     label: 'Save Effect Stack',
-    description: 'Save the current effect stack as a preset.',
+    description: 'Save the current effect stack as a named preset.',
     module: 'effects' as ModuleName,
     keywords: ['stack', 'save', 'preset', 'effects', 'group'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => effectsModule.saveStack('My Stack')
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const name = String((params as any)?.name ?? (params as any)?.param0 ?? 'Default Stack')
+      return effectsModule.saveStack(name)
+    }
   },
   {
     id: 'effects:stack:apply',
@@ -49,14 +52,20 @@ export const effectsCommands: AstronCommand[] = [
     description: 'Apply a saved effect stack to selected layers.',
     module: 'effects' as ModuleName,
     keywords: ['stack', 'apply', 'preset', 'effects', 'group', 'load'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => effectsModule.applyStack('')
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const stackName = String((params as any)?.stackName ?? (params as any)?.param0 ?? '')
+      return effectsModule.applyStack(stackName)
+    }
   },
   {
     id: 'effects:add',
     label: 'Add Effect',
-    description: 'Add an effect to selected layers.',
+    description: 'Add an effect to selected layers by name.',
     module: 'effects' as ModuleName,
     keywords: ['add', 'effect', 'apply', 'native', 'plugin', 'search'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => effectsModule.addEffect('')
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => {
+      const effectName = String((params as any)?.effectName ?? (params as any)?.param0 ?? '')
+      return effectsModule.addEffect(effectName)
+    }
   }
 ]

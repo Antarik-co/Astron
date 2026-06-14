@@ -22,10 +22,10 @@ export const exportCommands: AstronCommand[] = [
   {
     id: 'export:social',
     label: 'Export Social',
-    description: 'Queue a social media export for the active composition.',
+    description: 'Queue a social media H.264 export for the active composition.',
     module: 'export' as ModuleName,
-    keywords: ['export', 'social', 'instagram', 'tiktok', 'reels'],
-    execute: async (params?: CommandParams): Promise<AstronCommandResult> => exportModule.quickExport('social')
+    keywords: ['export', 'social', 'instagram', 'tiktok', 'reels', 'mp4'],
+    execute: async (params?: CommandParams): Promise<AstronCommandResult> => exportModule.quickExport('web')
   },
   {
     id: 'export:version',
